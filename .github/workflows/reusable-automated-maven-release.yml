@@ -51,7 +51,7 @@ jobs:
     needs: identifiers-for-signing-key
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
           distribution: corretto
@@ -85,7 +85,7 @@ jobs:
       release_tag: ${{ steps.create-commit.outputs.release_tag }}
       release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: repo
       - uses: actions/cache/restore@v3
@@ -140,7 +140,7 @@ jobs:
     outputs:
       ARTIFACT_SHA256SUMS: ${{ steps.record-hashes.outputs.ARTIFACT_SHA256SUMS }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
       - uses: actions/setup-java@v3
@@ -175,7 +175,7 @@ jobs:
     env:
       KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: repo
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
