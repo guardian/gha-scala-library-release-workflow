@@ -137,6 +137,8 @@ jobs:
     name: 🎊 Create unsigned artifacts
     needs: push-release-commit
     runs-on: ubuntu-latest
+    outputs:
+      ARTIFACT_SHA256SUMS: ${{ steps.record-hashes.outputs.ARTIFACT_SHA256SUMS }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -148,6 +150,18 @@ jobs:
           cache: sbt
       - name: Generate artifacts
         run: sbt +publish
+      - name: Record SHA-256 hashes of artifacts
+        id: record-hashes
+        run: |
+          sudo apt-get install hashdeep -q > /dev/null
+          cd /tmp/funky
+          
+          {
+            echo 'ARTIFACT_SHA256SUMS<<EOF'
+            sha256deep -r -l .
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
       - uses: actions/cache/save@v3
         id: cache
         with:
@@ -174,12 +188,9 @@ jobs:
           KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
-          sudo apt-get install hashdeep -q > /dev/null
-          
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
-          
-          sha256deep -r -l /tmp/funky
+
       - uses: actions/cache/save@v3
         with:
           path: /tmp/funky
