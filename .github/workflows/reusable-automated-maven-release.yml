@@ -266,7 +266,7 @@ jobs:
 
   github-release:
     name: 🔒 GitHub Release
-    needs: sign
+    needs:  [push-release-commit, sign]
     runs-on: ubuntu-latest
     permissions:
       contents: write
