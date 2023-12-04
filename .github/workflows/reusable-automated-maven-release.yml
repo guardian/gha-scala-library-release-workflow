@@ -196,6 +196,7 @@ jobs:
       - name: Push signed tag
         env:
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
+          RELEASE_COMMIT_ID: ${{ needs.push-release-commit.outputs.release_commit_id }}
           ARTIFACT_SHA256SUMS: ${{ needs.create-artifacts.outputs.ARTIFACT_SHA256SUMS }}
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
@@ -212,7 +213,7 @@ jobs:
           $ARTIFACT_SHA256SUMS
           EndOfFile
           
-          git tag -a $RELEASE_TAG -F tag-message.txt
+          git tag -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
           git push $RELEASE_TAG
       - uses: actions/cache/save@v3
         with:
