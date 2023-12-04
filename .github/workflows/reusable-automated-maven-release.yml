@@ -172,7 +172,13 @@ jobs:
     name: 🔒 Sign
     needs: [create-artifacts, identifiers-for-signing-key]
     runs-on: ubuntu-latest
+    env:
+      KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          path: repo
+          ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
       - uses: actions/cache/restore@v3
         with:
           path: /tmp/funky
@@ -184,13 +190,29 @@ jobs:
           java-version: 17
           gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
       - name: Sign artifacts
-        env:
-          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
-          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
-
+      - name: Push signed tag
+        env:
+          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
+          ARTIFACT_SHA256SUMS: ${{ needs.create-artifacts.outputs.ARTIFACT_SHA256SUMS }}
+          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+        run: |
+          cd repo
+          git config user.email "$KEY_EMAIL"
+          git config user.name "@$GITHUB_ACTOR using Automated Maven Release"
+          git config tag.gpgSign true
+          git config user.signingkey "$KEY_FINGERPRINT"
+          
+          cat << EndOfFile > tag-message.txt
+          Release $RELEASE_TAG initiated by @$GITHUB_ACTOR using Automated Maven Release
+          
+          $ARTIFACT_SHA256SUMS
+          EndOfFile
+          
+          git tag -a $RELEASE_TAG -F tag-message.txt
+          git push $RELEASE_TAG
       - uses: actions/cache/save@v3
         with:
           path: /tmp/funky
