@@ -1,0 +1,236 @@
+name: Reusable Automated Maven Release workflow
+
+on:
+  workflow_call:
+    secrets:
+      AUTOMATED_MAVEN_RELEASE_PGP_SECRET:
+        required: true
+      AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD:
+        required: true
+
+# Determine Release Version (project code)
+# Create Release Commit (release-workflow-code as GitHub App) - includes GitHub Actor in commit message
+#   * https://github.com/orgs/community/discussions/50055
+# ... wait on standard tests to run?!
+# Create artifacts (project code)
+# Sign artifacts (release-workflow-code as GitHub App)
+#  * Create Release Tag, with artifact hashes in tag message
+#  * Create post-Release Commit with post-release version
+# Release artifacts to Maven (release-workflow-code as GitHub App)
+# Create GitHub Release (release-workflow-code as GitHub App)
+
+jobs:
+  identifiers-for-signing-key:
+    name: 🔒 Read Signing Key Id
+    runs-on: ubuntu-latest
+    outputs:
+      key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
+      key_email: ${{ steps.read-identifiers.outputs.key_email }}
+    steps:
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Read Identifiers from Signing Key
+        id: read-identifiers
+        run: |
+          sudo apt-get install hashdeep
+          sha256deep -r -l .
+          
+          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
+          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
+          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
+          echo "key_fingerprint=$key_fingerprint"
+          
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          key_fingerprint=$key_fingerprint
+          key_email=$key_email"
+          EndOfFile
+
+
+  generate-version-update-commits:
+    name: 🎊 Calculate Version Update
+    needs: identifiers-for-signing-key
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+      - name: Use sbt-release to construct version.sbt updates
+        env:
+          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+        run: |
+          git config user.email "$KEY_EMAIL"
+          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
+          sbt "release with-defaults"
+          echo $GITHUB_WORKSPACE
+          cd `mktemp -d`
+          git clone --bare $GITHUB_WORKSPACE repo-with-unsigned-version-update-commits.git
+          rm -Rf $GITHUB_WORKSPACE/*
+          mv repo-with-unsigned-version-update-commits.git $GITHUB_WORKSPACE/
+          ls -lR $GITHUB_WORKSPACE
+      - uses: actions/cache/save@v3
+        with:
+          path: repo-with-unsigned-version-update-commits.git
+          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+
+  push-release-commit:
+    name: 🔒 Push Release Commit
+    needs: [generate-version-update-commits, identifiers-for-signing-key]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.create-commit.outputs.release_tag }}
+      release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: repo
+      - uses: actions/cache/restore@v3
+        with:
+          path: repo-with-unsigned-version-update-commits.git
+          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Create commit
+        id: create-commit
+        env:
+          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
+          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+        run: |
+          echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
+          echo "GITHUB_REF=$GITHUB_REF"
+          
+          cd repo-with-unsigned-version-update-commits.git
+          release_tag=$(git describe --tags --abbrev=0)
+          
+          cd ../repo
+          git status
+          git config user.email "$KEY_EMAIL"
+          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
+          git config commit.gpgsign true
+          git config user.signingkey "$KEY_FINGERPRINT"
+          
+          git remote add unsigned ../repo-with-unsigned-version-update-commits.git
+          git fetch unsigned
+          git cherry-pick -S$KEY_FINGERPRINT $GITHUB_REF_NAME..unsigned/$GITHUB_REF_NAME
+          git status
+          
+          release_commit_id=$(git rev-parse HEAD^)
+          
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          release_tag=$release_tag
+          release_commit_id=$release_commit_id
+          EndOfFile
+          
+          git log --format="%h %p %ce %s" --decorate=short -n3
+          git status
+          git push
+
+  create-artifacts:
+    name: 🎊 Create unsigned artifacts
+    needs: push-release-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+      - name: Generate artifacts
+        run: sbt +publish
+      - uses: actions/cache/save@v3
+        id: cache
+        with:
+          path: /tmp/funky
+          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+
+  sign:
+    name: 🔒 Sign
+    needs: [create-artifacts, identifiers-for-signing-key]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v3
+        with:
+          path: /tmp/funky
+          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+      - name: Sign artifacts
+        env:
+          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
+        run: |
+          echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
+          find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
+          ls -lR /tmp/funky
+          sha256deep -r -l /tmp/funky
+      - uses: actions/cache/save@v3
+        with:
+          path: /tmp/funky
+          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+
+  sonatype-release:
+    name: 🔒 Sonatype Release
+    needs: sign
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/cache/restore@v3
+        with:
+          path: /tmp/funky
+          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - name: Create tiny sbt project to perform Sonatype upload
+        run: |
+          cat << EndOfFile > build.sbt
+          sonatypeBundleDirectory := new File("/tmp/funky")
+          sonatypeProfileName := "com.gu"
+          EndOfFile
+          
+          mkdir project
+          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.21")' > project/plugins.sbt
+          echo 'sbt.version = 1.9.7' > project/build.properties
+          
+          ls -lR .
+      - uses: actions/setup-java@v3
+        with:
+          distribution: corretto
+          java-version: 17
+          cache: sbt
+      - name: Release
+        env:
+          SONATYPE_USERNAME: guardian.automated.maven.release
+          SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
+        run: |
+          sbt "sonatypeBundleRelease"
+
+  github-release:
+    name: 🔒 GitHub Release
+    needs: sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create Github Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
+        run: |
+          gh release create $RELEASE_TAG --generate-notes --verify-tag
+
