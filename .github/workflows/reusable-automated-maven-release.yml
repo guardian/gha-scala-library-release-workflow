@@ -170,7 +170,7 @@ jobs:
 
   sign:
     name: 🔒 Sign
-    needs: [create-artifacts, identifiers-for-signing-key]
+    needs: [identifiers-for-signing-key, push-release-commit, create-artifacts]
     runs-on: ubuntu-latest
     env:
       KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
@@ -199,6 +199,7 @@ jobs:
           ARTIFACT_SHA256SUMS: ${{ needs.create-artifacts.outputs.ARTIFACT_SHA256SUMS }}
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
+          echo "RELEASE_TAG=$RELEASE_TAG"
           cd repo
           git config user.email "$KEY_EMAIL"
           git config user.name "@$GITHUB_ACTOR using Automated Maven Release"
