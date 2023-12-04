@@ -201,6 +201,7 @@ jobs:
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
           echo "RELEASE_TAG=$RELEASE_TAG"
+          echo "RELEASE_COMMIT_ID=$RELEASE_COMMIT_ID"
           cd repo
           git config user.email "$KEY_EMAIL"
           git config user.name "@$GITHUB_ACTOR using Automated Maven Release"
@@ -213,8 +214,17 @@ jobs:
           $ARTIFACT_SHA256SUMS
           EndOfFile
           
+          echo "Message is..."
+          cat tag-message.txt
+          
+          echo "Creating tag"
           git tag -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
-          git push $RELEASE_TAG
+          
+          echo "RELEASE_TAG=$RELEASE_TAG"
+          git show $RELEASE_TAG
+          
+          echo "Pushing tag $RELEASE_TAG"
+          git push origin $RELEASE_TAG
       - uses: actions/cache/save@v3
         with:
           path: /tmp/funky
