@@ -35,12 +35,6 @@ jobs:
       - name: Read Identifiers from Signing Key
         id: read-identifiers
         run: |
-          sudo apt-get install hashdeep -q > /dev/null
-          echo "Trying hashdeep..."
-          hashdeep -r -l -c SHA-256 .
-          echo "Trying sha256deep..."
-          sha256deep -r -l .
-          
           key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
           key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
           key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
@@ -178,6 +172,7 @@ jobs:
       - name: Sign artifacts
         env:
           KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
+          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
           sudo apt-get install hashdeep -q > /dev/null
           
@@ -237,5 +232,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
+          echo "RELEASE_TAG=$RELEASE_TAG"
           gh release create $RELEASE_TAG --generate-notes --verify-tag
 
