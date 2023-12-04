@@ -35,7 +35,7 @@ jobs:
       - name: Read Identifiers from Signing Key
         id: read-identifiers
         run: |
-          sudo apt-get install hashdeep
+          sudo apt-get upgrade -q --force-yes > /dev/null
           sha256deep -r -l .
           
           key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
@@ -176,9 +176,11 @@ jobs:
         env:
           KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
         run: |
+          sudo apt-get upgrade -q --force-yes > /dev/null
+          
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
           find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
-          ls -lR /tmp/funky
+          
           sha256deep -r -l /tmp/funky
       - uses: actions/cache/save@v3
         with:
