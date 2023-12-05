@@ -1,5 +1,5 @@
 # GHA Scala Library Release Workflow
-_Publishing Scala libraries to Maven Central using GitHub Actions (and keeping publication credentials away from the library build)_
+_Publishing Scala libraries to Maven Central using GitHub Actions (GHA), keeping publication credentials securely isolated from the library build_
 
 This [Reusable Workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows) puts the stages of publishing into separate workflow
 [Jobs](https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow) - this means that all the credentials required for publication
