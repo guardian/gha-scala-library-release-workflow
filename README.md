@@ -6,12 +6,13 @@ into separate workflow [jobs](https://docs.github.com/en/actions/using-jobs/usin
 
 ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/3d229ccd-e60f-44f7-86e7-0e607134e47b)
 
-This means that all the credentials required for publication
-(PGP signing key & Sonatype [OSSRH](https://central.sonatype.org/publish/publish-guide/) username/password) are _not_ available to the code
-running the library build - so when the library's code is being compiled, and the tests run, there is no way for malicious code to exfiltrate those
-secrets.
+This means your library's code, with its tests and dependencies, does **NOT** have access to your release credentials:
 
+* [Sonatype OSSRH](https://central.sonatype.org/publish/publish-guide/) username & password
+* PGP signing key
 
+So while the library's code is being compiled, its tests run, and artifacts created, there is no way for malicious code to
+[exfiltrate](https://www.synacktiv.com/en/publications/cicd-secrets-extraction-tips-and-tricks) those secrets.
 
 ### Examples
 
