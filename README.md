@@ -1,4 +1,4 @@
-# github-actions-automated-maven-release
+# GHA Scala Library Release Workflow
 _Publishing Scala libraries to Maven Central using GitHub Actions (and keeping publication credentials away from the library build)_
 
 This [Reusable Workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows) puts the stages of publishing into separate workflow
