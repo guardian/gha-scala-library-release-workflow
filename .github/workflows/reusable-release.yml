@@ -30,7 +30,7 @@ jobs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
       key_email: ${{ steps.read-identifiers.outputs.key_email }}
     steps:
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -50,12 +50,12 @@ jobs:
 
 
   generate-version-update-commits:
-    name: 🎊 Calculate Version Update
+    name: 🎊 Test & Version
     needs: identifiers-for-signing-key
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -88,7 +88,7 @@ jobs:
       release_tag: ${{ steps.create-commit.outputs.release_tag }}
       release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: repo
       - uses: actions/cache/restore@v3
@@ -96,7 +96,7 @@ jobs:
           path: repo-with-unsigned-version-update-commits.git
           key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -143,10 +143,10 @@ jobs:
     outputs:
       ARTIFACT_SHA256SUMS: ${{ steps.record-hashes.outputs.ARTIFACT_SHA256SUMS }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -178,7 +178,7 @@ jobs:
     env:
       KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: repo
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
@@ -187,7 +187,7 @@ jobs:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -255,7 +255,7 @@ jobs:
           echo 'sbt.version = 1.9.7' > project/build.properties
           
           ls -lR .
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
