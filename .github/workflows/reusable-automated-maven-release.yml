@@ -30,7 +30,7 @@ jobs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
       key_email: ${{ steps.read-identifiers.outputs.key_email }}
     steps:
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -96,7 +96,7 @@ jobs:
           path: repo-with-unsigned-version-update-commits.git
           key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -146,7 +146,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -187,7 +187,7 @@ jobs:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -255,7 +255,7 @@ jobs:
           echo 'sbt.version = 1.9.7' > project/build.properties
           
           ls -lR .
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
