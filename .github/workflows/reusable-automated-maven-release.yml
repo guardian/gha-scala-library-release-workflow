@@ -137,7 +137,7 @@ jobs:
           git push
 
   create-artifacts:
-    name: 🎊 Create unsigned artifacts
+    name: 🎊 Create artifacts
     needs: push-release-commit
     runs-on: ubuntu-latest
     outputs:
