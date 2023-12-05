@@ -17,4 +17,4 @@ So while the library's code is being compiled, its tests run, and artifacts crea
 ### Examples
 
 * https://github.com/guardian/etag-caching/blob/main/.github/workflows/release.yml
-
+* https://github.com/guardian/play-secret-rotation/pull/416
