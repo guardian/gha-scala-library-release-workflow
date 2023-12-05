@@ -19,6 +19,9 @@ on:
 # Release artifacts to Maven (release-workflow-code as GitHub App)
 # Create GitHub Release (release-workflow-code as GitHub App)
 
+env:
+  LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
+
 jobs:
   identifiers-for-signing-key:
     name: 🔒 Read Signing Key Id
@@ -149,13 +152,13 @@ jobs:
           java-version: 17
           cache: sbt
       - name: Generate artifacts
-        run: sbt +publish
+        run: sbt ";set ThisBuild / publishTo := Some(Resolver.file(\"foobar\", file(\"$LOCAL_ARTIFACTS_STAGING_PATH\"))); +publish"
       - name: Record SHA-256 hashes of artifacts
         id: record-hashes
         run: |
           sudo apt-get install hashdeep -q > /dev/null
-          cd /tmp/funky
           
+          cd $LOCAL_ARTIFACTS_STAGING_PATH
           {
             echo 'ARTIFACT_SHA256SUMS<<EOF'
             sha256deep -r -l .
@@ -165,7 +168,7 @@ jobs:
       - uses: actions/cache/save@v3
         id: cache
         with:
-          path: /tmp/funky
+          path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
 
   sign:
@@ -181,7 +184,7 @@ jobs:
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
       - uses: actions/cache/restore@v3
         with:
-          path: /tmp/funky
+          path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
       - uses: actions/setup-java@v3
@@ -192,7 +195,7 @@ jobs:
       - name: Sign artifacts
         run: |
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
-          find /tmp/funky -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
+          find $LOCAL_ARTIFACTS_STAGING_PATH -type f -exec gpg -a --local-user "$KEY_FINGERPRINT" --detach-sign {} \;
       - name: Push signed tag
         env:
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
@@ -227,7 +230,7 @@ jobs:
           git push origin $RELEASE_TAG
       - uses: actions/cache/save@v3
         with:
-          path: /tmp/funky
+          path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: signed-${{ github.run_id }}-${{ github.run_attempt }}
 
   sonatype-release:
@@ -237,13 +240,13 @@ jobs:
     steps:
       - uses: actions/cache/restore@v3
         with:
-          path: /tmp/funky
+          path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: signed-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
       - name: Create tiny sbt project to perform Sonatype upload
         run: |
           cat << EndOfFile > build.sbt
-          sonatypeBundleDirectory := new File("/tmp/funky")
+          sonatypeBundleDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
           sonatypeProfileName := "com.gu"
           EndOfFile
           
