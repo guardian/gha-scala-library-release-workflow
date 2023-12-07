@@ -30,7 +30,7 @@ jobs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
       key_email: ${{ steps.read-identifiers.outputs.key_email }}
     steps:
-      - uses: rtyley/setup-java@patch-1
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -55,11 +55,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rtyley/setup-java@patch-1 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
+      - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
         with:
           distribution: corretto
           java-version: 17
-          cache: sbt
       - name: Use sbt-release to construct version.sbt updates
         env:
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
@@ -96,7 +95,7 @@ jobs:
           path: repo-with-unsigned-version-update-commits.git
           key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: rtyley/setup-java@patch-1
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -146,11 +145,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
-      - uses: rtyley/setup-java@patch-1 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
+      - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is resolved
         with:
           distribution: corretto
           java-version: 17
-          cache: sbt
       - name: Generate artifacts
         run: sbt ";set ThisBuild / publishTo := Some(Resolver.file(\"foobar\", file(\"$LOCAL_ARTIFACTS_STAGING_PATH\"))); +publish"
       - name: Record SHA-256 hashes of artifacts
@@ -187,7 +185,7 @@ jobs:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           fail-on-cache-miss: true
-      - uses: rtyley/setup-java@patch-1
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
@@ -255,11 +253,11 @@ jobs:
           echo 'sbt.version = 1.9.7' > project/build.properties
           
           ls -lR .
-      - uses: rtyley/setup-java@patch-1
+      - uses: actions/setup-java@v4
         with:
           distribution: corretto
           java-version: 17
-          cache: sbt
+          cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - name: Release
         env:
           SONATYPE_USERNAME: guardian.automated.maven.release
