@@ -140,7 +140,7 @@ jobs:
 
   create-artifacts:
     name: 🎊 Create artifacts
-    needs: push-release-commit
+    needs: [identifiers-for-signing-key, push-release-commit]
     runs-on: ubuntu-latest
     outputs:
       ARTIFACT_SHA256SUMS: ${{ steps.record-hashes.outputs.ARTIFACT_SHA256SUMS }}
@@ -153,7 +153,14 @@ jobs:
           distribution: corretto
           java-version: 17
       - name: Generate artifacts
-        run: sbt ";set ThisBuild / publishTo := Some(Resolver.file(\"foobar\", file(\"$LOCAL_ARTIFACTS_STAGING_PATH\"))); +publish"
+        run: |
+          cat << EndOfFile > sbt-commands.txt
+          set every sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("$GITHUB_REPOSITORY_OWNER", "${GITHUB_REPOSITORY#*/}", "${{ needs.identifiers-for-signing-key.outputs.key_email }}"))
+          set ThisBuild / publishTo := Some(Resolver.file("foobar", file("$LOCAL_ARTIFACTS_STAGING_PATH")))
+          EndOfFile
+          cat sbt-commands.txt
+          
+          sbt ";< sbt-commands.txt; +publish"
       - name: Record SHA-256 hashes of artifacts
         id: record-hashes
         run: |
