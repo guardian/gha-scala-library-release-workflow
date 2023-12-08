@@ -278,5 +278,5 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "[Release Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
 
