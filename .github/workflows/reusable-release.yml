@@ -45,7 +45,7 @@ jobs:
           
           cat << EndOfFile >> $GITHUB_OUTPUT
           key_fingerprint=$key_fingerprint
-          key_email=$key_email"
+          key_email=$key_email
           EndOfFile
 
 
