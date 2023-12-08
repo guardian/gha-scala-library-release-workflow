@@ -72,6 +72,9 @@ jobs:
           rm -Rf $GITHUB_WORKSPACE/*
           mv repo-with-unsigned-version-update-commits.git $GITHUB_WORKSPACE/
           ls -lR $GITHUB_WORKSPACE
+      - name: Job summary
+        run: |
+          echo "# Release $(git describe --tags --abbrev=0)" >> $GITHUB_STEP_SUMMARY
       - uses: actions/cache/save@v3
         with:
           path: repo-with-unsigned-version-update-commits.git
@@ -271,12 +274,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
     steps:
       - name: Create Github Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
         run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+      - name: Job summary
+        run: |
+          echo "GitHub Release notes: [$RELEASE_TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
 
