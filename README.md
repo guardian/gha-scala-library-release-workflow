@@ -6,6 +6,11 @@ into separate workflow [jobs](https://docs.github.com/en/actions/using-jobs/usin
 
 ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/3d229ccd-e60f-44f7-86e7-0e607134e47b)
 
+The individual workflow jobs can be distingushed in their level of trust - what code they execute:
+
+* 🎊 Library build/test code - the _shiny & unknown_ wonders falling out of the confetti ball symbolise the potentially dangerous code coming from the library's transitive dependencies
+* 🔒 Fixed code that's dictated by `gha-scala-library-release-workflow` - trusted with release credentials and write access on the repository
+
 This means your library's code, with its tests and dependencies, does **NOT** have access to your release credentials:
 
 * [Sonatype OSSRH](https://central.sonatype.org/publish/publish-guide/) username & password
