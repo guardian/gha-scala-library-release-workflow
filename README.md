@@ -21,6 +21,7 @@ So while the library's code is being compiled, its tests run, and artifacts crea
 
 ### Examples
 
+* https://github.com/guardian/facia-scala-client/pull/299 - most recent fully-commented example
 * https://github.com/guardian/play-secret-rotation/pull/416
 * https://github.com/guardian/play-googleauth/pull/208
 
