@@ -25,4 +25,4 @@ So while the library's code is being compiled, its tests run, and artifacts crea
 * https://github.com/guardian/play-secret-rotation/pull/416
 * https://github.com/guardian/play-googleauth/pull/208
 
-See also [_all repos_](https://github.com/search?q=%22guardian%2Fgha-scala-library-release-workflow%22++NOT+is%3Aarchived+NOT+repo%3Aguardian%2Fgha-scala-library-release-workflow&type=code) using Scala Library Release Workflow.
+See also [_all repos_](https://github.com/search?q=%22guardian%2Fgha-scala-library-release-workflow%22++NOT+is%3Aarchived+NOT+repo%3Aguardian%2Fgha-scala-library-release-workflow+language%3AYAML&type=code&l=YAML) using Scala Library Release Workflow.
