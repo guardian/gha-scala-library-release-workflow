@@ -5,6 +5,15 @@ and updated `sbt` settings.
 
 [Example GitHub pull requests](#examples) making these changes can be found further below.
 
+## Repo settings
+
+* Disable [Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+  on any branch the workflow will be pushing to (ie the default branch). See issue
+  https://github.com/guardian/gha-scala-library-release-workflow/issues/5.
+* **Guardian developers:** comply with the repository requirements of
+  [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
+  i.e. ensure the repository has a `production` topic label.
+
 ## GitHub workflow
 
 [Example `.github/workflows/release.yml`](https://github.com/guardian/etag-caching/blob/main/.github/workflows/release.yml)
@@ -37,14 +46,25 @@ to the workflow.
 
 ### Recommended `sbt` settings
 
-[Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt)
+[Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt) &
+[`version.sbt` files](https://github.com/guardian/etag-caching/blob/main/version.sbt)
 
-* `scalacOptions` should include `-release:11` (also known as `-java-output-version`
-  [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)) -
-  the workflow will always compile with one of the most recent LTS releases of Java [supported by Scala](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html),
-  but the generated class files will be compatible with whichever version of Java you target.
+* `version` - as [specified by `sbt-release`](https://github.com/sbt/sbt-release?tab=readme-ov-file#versionsbt), this
+  should be the sole entry in your `version.sbt` file, and during normal dev should define a version with a `-SNAPSHOT`
+  suffix. You can think of `-SNAPSHOT` as meaning 'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`,
+  you're working on a _preview_ of the forthcoming `1.4.7` release. The workflow will automatically update the `version`
+  during each release, as appropriate.
 * `releaseVersion := fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
-  automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin.
+  automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
+  can go up by more than just an `x.x.PATCH` increment in a release, if
+  [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy)
+  say that it should.
+* `scalacOptions` should include `-release:11` (available with Scala [2.13.9](https://www.scala-lang.org/news/2.13.9)
+  and above, also known as `-java-output-version`
+  [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)) -
+  the workflow will always use one of the most recent LTS releases of Java
+  [supported by Scala](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html),
+  but the generated class files will be compatible with whichever version of Java you target.
 * `publish / skip := true` (rather than other legacy hacks like `publishArtifact := false`) for
   sbt modules that don't generate artifacts (often, the 'root' project in a multi-project build). This
   setting is respected by `sbt-version-policy` - it won't attempt to calculate compatibility on a module
