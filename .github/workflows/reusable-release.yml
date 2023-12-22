@@ -8,19 +8,9 @@ on:
       AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD:
         required: true
 
-# Determine Release Version (project code)
-# Create Release Commit (release-workflow-code as GitHub App) - includes GitHub Actor in commit message
-#   * https://github.com/orgs/community/discussions/50055
-# ... wait on standard tests to run?!
-# Create artifacts (project code)
-# Sign artifacts (release-workflow-code as GitHub App)
-#  * Create Release Tag, with artifact hashes in tag message
-#  * Create post-Release Commit with post-release version
-# Release artifacts to Maven (release-workflow-code as GitHub App)
-# Create GitHub Release (release-workflow-code as GitHub App)
-
 env:
   LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
+  COMMITTER_NAME: "@${{github.actor}} using gha-scala-library-release-workflow"
 
 jobs:
   identifiers-for-signing-key:
@@ -64,7 +54,7 @@ jobs:
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
           git config user.email "$KEY_EMAIL"
-          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
+          git config user.name "$COMMITTER_NAME"
           sbt "release with-defaults"
           echo $GITHUB_WORKSPACE
           cd `mktemp -d`
@@ -118,7 +108,7 @@ jobs:
           cd ../repo
           git status
           git config user.email "$KEY_EMAIL"
-          git config user.name "@$GITHUB_ACTOR using Guardian Automated Maven Release"
+          git config user.name "$COMMITTER_NAME"
           git config commit.gpgsign true
           git config user.signingkey "$KEY_FINGERPRINT"
           
