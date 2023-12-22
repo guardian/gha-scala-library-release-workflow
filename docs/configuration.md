@@ -54,6 +54,9 @@ to the workflow.
   suffix. You can think of `-SNAPSHOT` as meaning 'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`,
   you're working on a _preview_ of the forthcoming `1.4.7` release. The workflow will automatically update the `version`
   during each release, as appropriate.
+* `licenses := Seq(License.Apache2)` - or whatever license you're using. Specifying a license is
+  [*required*](https://central.sonatype.org/publish/requirements/#license-information) for submitting artifacts
+  to Maven Central.
 * `releaseVersion := fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
   automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
   can go up by more than just an `x.x.PATCH` increment in a release, if
