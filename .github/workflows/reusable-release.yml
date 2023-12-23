@@ -1,4 +1,4 @@
-name: Reusable Automated Maven Release workflow
+name: Scala Library Release Workflow
 
 on:
   workflow_call:
@@ -11,6 +11,7 @@ on:
 env:
   LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
   COMMITTER_NAME: "@${{github.actor}} using gha-scala-library-release-workflow"
+  RUN_ATTEMPT_UID: ${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   identifiers-for-signing-key:
@@ -68,7 +69,7 @@ jobs:
       - uses: actions/cache/save@v3
         with:
           path: repo-with-unsigned-version-update-commits.git
-          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+          key: repo-with-unsigned-version-update-commits-${{ env.RUN_ATTEMPT_UID }}
 
   push-release-commit:
     name: 🔒 Push Release Commit
@@ -86,7 +87,7 @@ jobs:
       - uses: actions/cache/restore@v3
         with:
           path: repo-with-unsigned-version-update-commits.git
-          key: repo-with-unsigned-version-update-commits-${{ github.run_id }}-${{ github.run_attempt }}
+          key: repo-with-unsigned-version-update-commits-${{ env.RUN_ATTEMPT_UID }}
           fail-on-cache-miss: true
       - uses: actions/setup-java@v4
         with:
@@ -167,7 +168,7 @@ jobs:
         id: cache
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
-          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          key: unsigned-${{ env.RUN_ATTEMPT_UID }}
 
   sign:
     name: 🔒 Sign
@@ -183,7 +184,7 @@ jobs:
       - uses: actions/cache/restore@v3
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
-          key: unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          key: unsigned-${{ env.RUN_ATTEMPT_UID }}
           fail-on-cache-miss: true
       - uses: actions/setup-java@v4
         with:
@@ -205,7 +206,7 @@ jobs:
           echo "RELEASE_COMMIT_ID=$RELEASE_COMMIT_ID"
           cd repo
           git config user.email "$KEY_EMAIL"
-          git config user.name "@$GITHUB_ACTOR using Automated Maven Release"
+          git config user.name "$COMMITTER_NAME"
           git config tag.gpgSign true
           git config user.signingkey "$KEY_FINGERPRINT"
           
@@ -229,7 +230,7 @@ jobs:
       - uses: actions/cache/save@v3
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
-          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+          key: signed-${{ env.RUN_ATTEMPT_UID }}
 
   sonatype-release:
     name: 🔒 Sonatype Release
@@ -239,7 +240,7 @@ jobs:
       - uses: actions/cache/restore@v3
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
-          key: signed-${{ github.run_id }}-${{ github.run_attempt }}
+          key: signed-${{ env.RUN_ATTEMPT_UID }}
           fail-on-cache-miss: true
       - name: Create tiny sbt project to perform Sonatype upload
         run: |
