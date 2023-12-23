@@ -217,7 +217,7 @@ jobs:
           git config user.signingkey "$KEY_FINGERPRINT"
           
           cat << EndOfFile > tag-message.txt
-          Release $RELEASE_TAG initiated by @$GITHUB_ACTOR using Automated Maven Release
+          Release $RELEASE_TAG initiated by $COMMITTER_NAME
           
           $ARTIFACT_SHA256SUMS
           EndOfFile
