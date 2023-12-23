@@ -2,6 +2,12 @@ name: Scala Library Release Workflow
 
 on:
   workflow_call:
+    inputs:
+      SONATYPE_PROFILE_NAME:
+        description: 'Sonatype account profile name, eg "com.gu", "org.xerial", etc (not your Sonatype username)'
+        default: 'com.gu' # This Sonatype profile name is only for use by the Guardian!
+        required: false # Must be supplied if used by a non-Guardian project
+        type: string
     secrets:
       AUTOMATED_MAVEN_RELEASE_PGP_SECRET:
         required: true
@@ -246,7 +252,7 @@ jobs:
         run: |
           cat << EndOfFile > build.sbt
           sonatypeBundleDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
-          sonatypeProfileName := "com.gu"
+          sonatypeProfileName := "${{ inputs.SONATYPE_PROFILE_NAME }}"
           EndOfFile
           
           mkdir project
