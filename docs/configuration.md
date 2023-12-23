@@ -54,6 +54,10 @@ to the workflow.
   suffix. You can think of `-SNAPSHOT` as meaning 'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`,
   you're working on a _preview_ of the forthcoming `1.4.7` release. The workflow will automatically update the `version`
   during each release, as appropriate.
+* `organization` - this dictates the [groupId](https://maven.apache.org/guides/mini/guide-naming-conventions.html) of
+  your artifacts, and can be either the same as your Sonatype account profile name (eg `com.gu` for the Guardian),
+  or a dot-suffixed version of it (eg `com.gu.foobar`) if your project ('foobar') releases multiple artifacts
+  [_(details)_](https://github.com/guardian/gha-scala-library-release-workflow/pull/15)
 * `licenses := Seq(License.Apache2)` - or whatever license you're using. Specifying a license is
   [*required*](https://central.sonatype.org/publish/requirements/#license-information) for submitting artifacts
   to Maven Central.
