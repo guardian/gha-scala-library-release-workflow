@@ -5,13 +5,23 @@ on:
     inputs:
       SONATYPE_PROFILE_NAME:
         description: 'Sonatype account profile name, eg "com.gu", "org.xerial", etc (not your Sonatype username)'
-        default: 'com.gu' # This Sonatype profile name is only for use by the Guardian!
+        default: 'com.gu' # Only for use by the Guardian!
+        required: false # Must be supplied if used by a non-Guardian project
+        type: string
+      SONATYPE_USERNAME:
+        description: 'Sonatype username'
+        default: 'guardian.automated.maven.release' # Only for use by the Guardian!
         required: false # Must be supplied if used by a non-Guardian project
         type: string
     secrets:
-      AUTOMATED_MAVEN_RELEASE_PGP_SECRET:
+      SONATYPE_PASSWORD:
+        description: 'Password for the SONATYPE_USERNAME account - used to authenticate when uploading artifacts'
         required: true
-      AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD:
+      PGP_PRIVATE_KEY:
+        description:
+          "A passphrase-less PGP private key used to sign artifacts, commits, & tags.
+          Should be in normal plaintext 'BEGIN PGP PUBLIC KEY BLOCK' (ASCII-armored) format, with no additional BASE64-encoding.
+          The passphrase can be removed from an existing key using 'gpg --edit-key <key-id> passwd' : https://unix.stackexchange.com/a/550538/46453"
         required: true
 
 env:
@@ -31,7 +41,7 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
-          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+          gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Read Identifiers from Signing Key
         id: read-identifiers
         run: |
@@ -44,7 +54,6 @@ jobs:
           key_fingerprint=$key_fingerprint
           key_email=$key_email
           EndOfFile
-
 
   generate-version-update-commits:
     name: 🎊 Test & Version
@@ -99,7 +108,7 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
-          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+          gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Create commit
         id: create-commit
         env:
@@ -196,7 +205,7 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
-          gpg-private-key: ${{ secrets.AUTOMATED_MAVEN_RELEASE_PGP_SECRET }}
+          gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Sign artifacts
         run: |
           echo "KEY_FINGERPRINT=$KEY_FINGERPRINT"
@@ -267,8 +276,8 @@ jobs:
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - name: Release
         env:
-          SONATYPE_USERNAME: guardian.automated.maven.release
-          SONATYPE_PASSWORD: ${{ secrets.AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ inputs.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           sbt "sonatypeBundleRelease"
 
@@ -290,4 +299,3 @@ jobs:
       - name: Job summary
         run: |
           echo "GitHub Release notes: [$RELEASE_TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
-
