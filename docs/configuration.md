@@ -46,14 +46,15 @@ to the workflow.
 
 ### Recommended `sbt` settings
 
-[Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt) &
-[`version.sbt` files](https://github.com/guardian/etag-caching/blob/main/version.sbt)
+[Example `version.sbt`](https://github.com/guardian/etag-caching/blob/main/version.sbt)
 
 * `version` - as [specified by `sbt-release`](https://github.com/sbt/sbt-release?tab=readme-ov-file#versionsbt), this
   should be the sole entry in your `version.sbt` file, and during normal dev should define a version with a `-SNAPSHOT`
   suffix. You can think of `-SNAPSHOT` as meaning 'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`,
   you're working on a _preview_ of the forthcoming `1.4.7` release. The workflow will automatically update the `version`
   during each release, as appropriate.
+
+[Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt)
 * `organization` - this dictates the [groupId](https://maven.apache.org/guides/mini/guide-naming-conventions.html) of
   your artifacts, and can be either the same as your Sonatype account profile name (eg `com.gu` for the Guardian),
   or a dot-suffixed version of it (eg `com.gu.foobar`) if your project ('foobar') releases multiple artifacts
