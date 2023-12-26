@@ -8,6 +8,11 @@ on:
         default: 'com.gu' # Only for use by the Guardian!
         required: false # Must be supplied if used by a non-Guardian project
         type: string
+      SONATYPE_CREDENTIAL_HOST:
+        description: 'The host of your SONATYPE_PROFILE_NAME, either "oss.sonatype.org" or "s01.oss.sonatype.org"'
+        default: 'oss.sonatype.org' # The default host is going to be whatever "com.gu" is using
+        required: false # ...but if you're not the Guardian, you'll want to set this explicitly
+        type: string
       SONATYPE_USERNAME:
         description: 'Sonatype username'
         default: 'guardian.automated.maven.release' # Only for use by the Guardian!
@@ -262,11 +267,12 @@ jobs:
           cat << EndOfFile > build.sbt
           sonatypeBundleDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
           sonatypeProfileName := "${{ inputs.SONATYPE_PROFILE_NAME }}"
+          sonatypeCredentialHost := "${{ inputs.SONATYPE_CREDENTIAL_HOST }}"
           EndOfFile
           
           mkdir project
           echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.21")' > project/plugins.sbt
-          echo 'sbt.version = 1.9.7' > project/build.properties
+          echo 'sbt.version = 1.9.8' > project/build.properties
           
           ls -lR .
       - uses: actions/setup-java@v4
