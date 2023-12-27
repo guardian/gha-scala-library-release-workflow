@@ -70,6 +70,9 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
+      - name: Debug MIMA assessment
+        run: |
+          sbt "show versionPolicyFindIssues"
       - name: Use sbt-release to construct version.sbt updates
         env:
           KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
