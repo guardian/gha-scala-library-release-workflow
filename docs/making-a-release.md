@@ -18,7 +18,7 @@ https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/ec18
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/4f25745a-207d-4d40-b697-d488918930f0)
 * Click on the green `Run workflow` button in the modal popup that appears:<br>
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/b8669ae3-bb39-4ca6-b285-4eef3d3e341b)
-* You've started a release! However, the GitHub UI doesn't automatically update, so **reload** the page, and then click on
+* You've started a release! However, the GitHub UI can be slow to update, so **reload** the page, and then click on
   the new workflow run to see its progress:<br>
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/c9a20b42-9b5b-4161-82d0-0e1d6f2c9768)
 
