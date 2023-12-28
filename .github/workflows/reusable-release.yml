@@ -41,6 +41,7 @@ jobs:
     outputs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
       key_email: ${{ steps.read-identifiers.outputs.key_email }}
+      version_suffix: ${{ steps.generate-version-suffix.outputs.version_suffix }}
     steps:
       - uses: actions/setup-java@v4
         with:
@@ -60,16 +61,22 @@ jobs:
           key_email=$key_email
           EndOfFile
       - name: Check for default branch
+        id: generate-version-suffix
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           default_branch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name ${{ github.repository }})
           if [[ "$default_branch" = $GITHUB_REF_NAME ]]; then
             echo "Running on the default branch: $default_branch"
+            version_suffix=""
           else
             echo "Running on a non-default branch: $GITHUB_REF_NAME, not $default_branch"
-            exit 1
+            version_suffix="-PREVIEW.${{ github.ref_name }}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
           fi
+          echo "version_suffix: $version_suffix"
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          version_suffix=$version_suffix
+          EndOfFile
 
 
   generate-version-update-commits:
@@ -86,12 +93,18 @@ jobs:
         run: |
           sbt "show versionPolicyFindIssues"
       - name: Use sbt-release to construct version.sbt updates
-        env:
-          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
         run: |
-          git config user.email "$KEY_EMAIL"
+          git config user.email "${{ needs.identifiers-for-signing-key.outputs.key_email }}"
           git config user.name "$COMMITTER_NAME"
-          sbt "release with-defaults"
+          
+          sbt_commands_file=$(mktemp)
+          cat << EndOfFile > $sbt_commands_file
+          set releaseVersion := releaseVersion.value.andThen(_ + "${{ needs.identifiers-for-signing-key.outputs.version_suffix }}")
+          release with-defaults
+          EndOfFile
+          cat $sbt_commands_file
+          sbt ";< $sbt_commands_file"
+          
           echo $GITHUB_WORKSPACE
           cd `mktemp -d`
           git clone --bare $GITHUB_WORKSPACE repo-with-unsigned-version-update-commits.git
