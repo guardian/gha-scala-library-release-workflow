@@ -59,6 +59,18 @@ jobs:
           key_fingerprint=$key_fingerprint
           key_email=$key_email
           EndOfFile
+      - name: Check for default branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          default_branch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name ${{ github.repository }})
+          if [[ "$default_branch" = $GITHUB_REF_NAME ]]; then
+            echo "Running on the default branch: $default_branch"
+          else
+            echo "Running on a non-default branch: $GITHUB_REF_NAME, not $default_branch"
+            exit 1
+          fi
+
 
   generate-version-update-commits:
     name: 🎊 Test & Version
