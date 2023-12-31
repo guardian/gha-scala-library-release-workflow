@@ -181,17 +181,15 @@ jobs:
           git log --format="%h %p %ce %s" --decorate=short -n3
           git status
           
-          # Are we pushing a full main-branch release, or just a preview feature-branch release? 
-          # * Full Main-Branch Release:       2 commits - committing non-snapshot version, then new snapshot version
-          # * Preview Feature-Branch Release: 1 commit  - committing non-snapshot version only
           if [ "${{ needs.init.outputs.release_type }}" == "FULL_MAIN_BRANCH" ]
           then
             echo "Full Main-Branch release, pushing 2 commits to the default branch"
             git push # push 2 commits (non-snapshot version, then new snapshot version) onto the default branch
           else
-            echo "Preview Feature-Branch release, pushing 1 commit with the release tag $release_tag"
-            git tag --force -a -s -m "Release $release_tag initiated by $COMMITTER_NAME" $release_tag $release_commit_id
-            git push origin $release_tag # push the single commit with a tag only
+            tag_for_pushing="preliminary-${{ github.run_id }}"
+            echo "Preview Feature-Branch release, pushing 1 commit with the temporary tag $tag_for_pushing"
+            git tag -a -s -m "Release $release_tag initiated by $COMMITTER_NAME" $tag_for_pushing $release_commit_id
+            git push origin $tag_for_pushing # push the single commit with a tag only
           fi
           
 
@@ -286,7 +284,7 @@ jobs:
           cat tag-message.txt
           
           echo "Creating/Updating release tag with artifact details"
-          git tag --force -a -F tag-message.txt "$RELEASE_TAG" $RELEASE_COMMIT_ID
+          git tag --force -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
           
           echo "RELEASE_TAG=$RELEASE_TAG"
           git show $RELEASE_TAG
