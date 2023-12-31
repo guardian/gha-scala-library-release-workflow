@@ -92,9 +92,9 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
-      - name: Debug MIMA assessment
-        run: |
-          sbt "show versionPolicyFindIssues"
+#      - name: Debug MIMA assessment
+#        run: |
+#          sbt "show versionPolicyFindIssues"
       - name: Use sbt-release to construct version.sbt updates
         run: |
           git config user.email "${{ needs.init.outputs.key_email }}"
@@ -283,7 +283,7 @@ jobs:
           cat tag-message.txt
           
           echo "Creating tag"
-          git tag -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
+          git tag -a -F tag-message.txt "$RELEASE_TAG-ARTIFACTS" $RELEASE_COMMIT_ID
           
           echo "RELEASE_TAG=$RELEASE_TAG"
           git show $RELEASE_TAG
