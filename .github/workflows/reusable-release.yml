@@ -186,9 +186,11 @@ jobs:
           # * Preview Feature-Branch Release: 1 commit  - committing non-snapshot version only
           if [ "${{ needs.init.outputs.release_type }}" == "FULL_MAIN_BRANCH" ]
           then
+            echo "Full Main-Branch release, pushing 2 commits to the default branch"
             git push # push 2 commits (non-snapshot version, then new snapshot version) onto the default branch
           else
-            git tag -a -s -m "Release $release_tag initiated by $COMMITTER_NAME" $release_tag $release_commit_id
+            echo "Preview Feature-Branch release, pushing 1 commit with the release tag $release_tag"
+            git tag --force -a -s -m "Release $release_tag initiated by $COMMITTER_NAME" $release_tag $release_commit_id
             git push origin $release_tag # push the single commit with a tag only
           fi
           
@@ -283,8 +285,8 @@ jobs:
           echo "Message is..."
           cat tag-message.txt
           
-          echo "Creating tag"
-          git tag -a -F tag-message.txt "$RELEASE_TAG-ARTIFACTS" $RELEASE_COMMIT_ID
+          echo "Creating/Updating release tag with artifact details"
+          git tag --force -a -F tag-message.txt "$RELEASE_TAG" $RELEASE_COMMIT_ID
           
           echo "RELEASE_TAG=$RELEASE_TAG"
           git show $RELEASE_TAG
