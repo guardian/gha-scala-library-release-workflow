@@ -337,6 +337,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     env:
       RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -379,5 +380,7 @@ jobs:
           </details>
           EndOfFile
           
-          gh pr comment $GITHUB_REF_NAME --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
+          cat comment_body.txt
+          
+          gh pr comment ${{ github.ref_name }} --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
 
