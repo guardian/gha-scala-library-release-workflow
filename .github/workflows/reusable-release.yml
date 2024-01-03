@@ -343,28 +343,35 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-      GITHUB_ACTIONS_PATH: ${{ GITHUB_REPO_URL }}/actions
-      GITHUB_WORKFLOW_RUN_URL: ${{ GITHUB_ACTIONS_PATH }}/runs/${{ github.run_id }}
     steps:
+      - name: Common values
+        run: |
+          GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
+          GITHUB_WORKFLOW_FILE="release.yml" # Could be derived from $GITHUB_WORKFLOW_REF
+          
+          cat << EndOfFile >> $GITHUB_ENV
+          GITHUB_WORKFLOW_LINK="[$GITHUB_WORKFLOW_FILE]($GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE)"
+          GITHUB_WORKFLOW_RUN_LINK="[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})"
+          EndOfFile
       - name: Create Github Release
         if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
         run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ env.GITHUB_WORKFLOW_RUN_URL }})"
-          echo "GitHub Release notes: [$RELEASE_TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
+          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
+          echo "GitHub Release notes: [$RELEASE_TAG]($GITHUB_REPO_URL/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
       - name: Update PR
         if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
         run: |
           cat << EndOfFile > comment_body.txt
-          @${{github.actor}} has published a preview version of this PR using release workflow run [#${{ github.run_number }}](${{ env.GITHUB_WORKFLOW_RUN_URL }}), based
-          off commit ${{ github.sha }}:
+          @${{github.actor}} has published a preview version of this PR using release workflow run $GITHUB_WORKFLOW_RUN_LINK, based
+          on commit ${{ github.sha }}:
           
           $RELEASE_TAG
           
           <details>
           <summary>Want to make another preview release?</summary>
           
-          Run [release.yml]($GITHUB_ACTIONS_PATH/workflows/release.yml) using 'Run workflow' in the GitHub UI,
-          specifying the `$GITHUB_REF_NAME` branch, or use the [GitHub CLI](https://cli.github.com/) command:
+          Run $GITHUB_WORKFLOW_LINK using 'Run workflow' in the GitHub UI,
+          specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
           
           gh workflow run release.yml --ref $GITHUB_REF_NAME
           
@@ -373,7 +380,7 @@ jobs:
           <details>
           <summary>Want to make a full release after this PR is merged?</summary>
           
-          Run [release.yml]($GITHUB_ACTIONS_PATH/workflows/release.yml) using 'Run workflow' in the GitHub UI,
+          Run $GITHUB_WORKFLOW_LINK using 'Run workflow' in the GitHub UI,
           leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
           
           gh workflow run release.yml
@@ -384,4 +391,3 @@ jobs:
           cat comment_body.txt
           
           gh pr comment ${{ github.ref_name }} --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
-
