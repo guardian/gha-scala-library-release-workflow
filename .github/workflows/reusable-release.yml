@@ -343,8 +343,8 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
       GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-      GITHUB_ACTIONS_PATH: ${{ env.GITHUB_REPO_URL }}/actions
-      GITHUB_WORKFLOW_RUN_URL: ${{ env.GITHUB_ACTIONS_PATH }}/runs/${{ github.run_id }}
+      GITHUB_ACTIONS_PATH: ${{ GITHUB_REPO_URL }}/actions
+      GITHUB_WORKFLOW_RUN_URL: ${{ GITHUB_ACTIONS_PATH }}/runs/${{ github.run_id }}
     steps:
       - name: Create Github Release
         if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
