@@ -75,7 +75,7 @@ jobs:
             version_suffix=""
           else
             release_type="PREVIEW_FEATURE_BRANCH"
-            version_suffix="-PREVIEW.${{ github.ref_name }}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
+            version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:-_]]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
           fi
           echo "release_type: $release_type, version_suffix: $version_suffix"
           cat << EndOfFile >> $GITHUB_OUTPUT
@@ -348,10 +348,12 @@ jobs:
         run: |
           GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
           GITHUB_WORKFLOW_FILE="release.yml" # Could be derived from $GITHUB_WORKFLOW_REF
+          GITHUB_WORKFLOW_URL="$GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE"
           
           cat << EndOfFile >> $GITHUB_ENV
-          GITHUB_WORKFLOW_LINK="[$GITHUB_WORKFLOW_FILE]($GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE)"
-          GITHUB_WORKFLOW_RUN_LINK="[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})"
+          GITHUB_WORKFLOW_FILE=$GITHUB_WORKFLOW_FILE
+          GITHUB_WORKFLOW_LINK=[GitHub UI]($GITHUB_WORKFLOW_URL)
+          GITHUB_WORKFLOW_RUN_LINK=[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})
           EndOfFile
       - name: Create Github Release
         if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
@@ -362,28 +364,25 @@ jobs:
         if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
         run: |
           cat << EndOfFile > comment_body.txt
-          @${{github.actor}} has published a preview version of this PR using release workflow run $GITHUB_WORKFLOW_RUN_LINK, based
-          on commit ${{ github.sha }}:
+          @${{github.actor}} has published a preview version of this PR with release workflow run $GITHUB_WORKFLOW_RUN_LINK, based on commit ${{ github.sha }}:
           
           $RELEASE_TAG
           
           <details>
           <summary>Want to make another preview release?</summary>
           
-          Run $GITHUB_WORKFLOW_LINK using 'Run workflow' in the GitHub UI,
-          specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
+          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
           
-          gh workflow run release.yml --ref $GITHUB_REF_NAME
+          gh workflow run $GITHUB_WORKFLOW_FILE --ref $GITHUB_REF_NAME
           
           </details>
           
           <details>
           <summary>Want to make a full release after this PR is merged?</summary>
           
-          Run $GITHUB_WORKFLOW_LINK using 'Run workflow' in the GitHub UI,
-          leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
+          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
           
-          gh workflow run release.yml
+          gh workflow run $GITHUB_WORKFLOW_FILE
           
           </details>
           EndOfFile
