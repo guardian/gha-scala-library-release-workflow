@@ -342,19 +342,20 @@ jobs:
       RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      GITHUB_ACTIONS_PATH: ${{ github.server_url }}/${{ github.repository }}/actions
+      GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      GITHUB_ACTIONS_PATH: ${{ env.GITHUB_REPO_URL }}/actions
+      GITHUB_WORKFLOW_RUN_URL: ${{ env.GITHUB_ACTIONS_PATH }}/runs/${{ github.run_id }}
     steps:
       - name: Create Github Release
         if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
         run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})"
+          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ env.GITHUB_WORKFLOW_RUN_URL }})"
           echo "GitHub Release notes: [$RELEASE_TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
       - name: Update PR
         if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
         run: |
           cat << EndOfFile > comment_body.txt
-          @${{github.actor}} has published a preview version of this PR using
-          [gha-scala-library-release-workflow](https://github.com/guardian/gha-scala-library-release-workflow), based
+          @${{github.actor}} has published a preview version of this PR using release workflow run [#${{ github.run_number }}](${{ env.GITHUB_WORKFLOW_RUN_URL }}), based
           off commit ${{ github.sha }}:
           
           $RELEASE_TAG
