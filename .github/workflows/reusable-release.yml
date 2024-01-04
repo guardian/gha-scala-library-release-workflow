@@ -125,7 +125,7 @@ jobs:
           echo "GITHUB_REF=$GITHUB_REF"
           
           cd repo-with-unsigned-version-update-commits.git
-          release_tag=$(git describe --tags --abbrev=0)
+          RELEASE_TAG=$(git describe --tags --abbrev=0)
           
           cd ../repo
           git status
@@ -142,7 +142,7 @@ jobs:
           release_commit_id=$(git rev-parse HEAD^)
           
           cat << EndOfFile >> $GITHUB_OUTPUT
-          release_tag=$release_tag
+          release_tag=$RELEASE_TAG
           release_commit_id=$release_commit_id
           EndOfFile
           
