@@ -70,11 +70,12 @@ jobs:
         with:
           distribution: corretto
           java-version: 17
+#      - name: Debug MIMA assessment
+#        run: |
+#          sbt "show versionPolicyFindIssues"
       - name: Use sbt-release to construct version.sbt updates
-        env:
-          KEY_EMAIL: ${{ needs.init.outputs.key_email }}
         run: |
-          git config user.email "$KEY_EMAIL"
+          git config user.email "${{ needs.init.outputs.key_email }}"
           git config user.name "$COMMITTER_NAME"
           sbt "release with-defaults"
           echo $GITHUB_WORKSPACE
