@@ -35,8 +35,8 @@ env:
   RUN_ATTEMPT_UID: ${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
-  identifiers-for-signing-key:
-    name: 🔒 Read Signing Key Id
+  init:
+    name: 🔒 Init
     runs-on: ubuntu-latest
     outputs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
@@ -62,7 +62,7 @@ jobs:
 
   generate-version-update-commits:
     name: 🎊 Test & Version
-    needs: identifiers-for-signing-key
+    needs: init
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
           java-version: 17
       - name: Use sbt-release to construct version.sbt updates
         env:
-          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+          KEY_EMAIL: ${{ needs.init.outputs.key_email }}
         run: |
           git config user.email "$KEY_EMAIL"
           git config user.name "$COMMITTER_NAME"
@@ -93,7 +93,7 @@ jobs:
 
   push-release-commit:
     name: 🔒 Push Release Commit
-    needs: [generate-version-update-commits, identifiers-for-signing-key]
+    needs: [generate-version-update-commits, init]
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -117,8 +117,8 @@ jobs:
       - name: Create commit
         id: create-commit
         env:
-          KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
-          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+          KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
+          KEY_EMAIL: ${{ needs.init.outputs.key_email }}
         run: |
           echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
           echo "GITHUB_REF=$GITHUB_REF"
@@ -151,7 +151,7 @@ jobs:
 
   create-artifacts:
     name: 🎊 Create artifacts
-    needs: [identifiers-for-signing-key, push-release-commit]
+    needs: [init, push-release-commit]
     runs-on: ubuntu-latest
     outputs:
       ARTIFACT_SHA256SUMS: ${{ steps.record-hashes.outputs.ARTIFACT_SHA256SUMS }}
@@ -166,7 +166,7 @@ jobs:
       - name: Generate artifacts
         run: |
           cat << EndOfFile > sbt-commands.txt
-          set every sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("$GITHUB_REPOSITORY_OWNER", "${GITHUB_REPOSITORY#*/}", "${{ needs.identifiers-for-signing-key.outputs.key_email }}"))
+          set every sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("$GITHUB_REPOSITORY_OWNER", "${GITHUB_REPOSITORY#*/}", "${{ needs.init.outputs.key_email }}"))
           set ThisBuild / publishTo := Some(Resolver.file("foobar", file("$LOCAL_ARTIFACTS_STAGING_PATH")))
           EndOfFile
           cat sbt-commands.txt
@@ -192,10 +192,10 @@ jobs:
 
   sign:
     name: 🔒 Sign
-    needs: [identifiers-for-signing-key, push-release-commit, create-artifacts]
+    needs: [init, push-release-commit, create-artifacts]
     runs-on: ubuntu-latest
     env:
-      KEY_FINGERPRINT: ${{ needs.identifiers-for-signing-key.outputs.key_fingerprint }}
+      KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -220,7 +220,7 @@ jobs:
           RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
           RELEASE_COMMIT_ID: ${{ needs.push-release-commit.outputs.release_commit_id }}
           ARTIFACT_SHA256SUMS: ${{ needs.create-artifacts.outputs.ARTIFACT_SHA256SUMS }}
-          KEY_EMAIL: ${{ needs.identifiers-for-signing-key.outputs.key_email }}
+          KEY_EMAIL: ${{ needs.init.outputs.key_email }}
         run: |
           echo "RELEASE_TAG=$RELEASE_TAG"
           echo "RELEASE_COMMIT_ID=$RELEASE_COMMIT_ID"
