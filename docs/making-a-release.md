@@ -16,7 +16,10 @@ https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/ec18
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/a9ee9dd8-5443-41f6-b335-3b9ecf3e3b1d)
 * Click on `Run workflow` on the right-hand side of the blue _"This workflow has a workflow_dispatch event trigger."_ bar:<br>
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/4f25745a-207d-4d40-b697-d488918930f0)
-* Click on the green `Run workflow` button in the modal popup that appears:<br>
+* In the modal popup that appears:
+  * For a normal full release on the main branch, leave the branch set to the default (ie `main`). If you're
+    making a 'preview' release of an unmerged PR, select the PR's branch from the `Branch:` dropdown.
+  * Click on the green `Run workflow` button:<br>
   ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/b8669ae3-bb39-4ca6-b285-4eef3d3e341b)
 * You've started a release! However, the GitHub UI can be slow to update, so **reload** the page, and then click on
   the new workflow run to see its progress:<br>

@@ -41,6 +41,8 @@ jobs:
     outputs:
       key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
       key_email: ${{ steps.read-identifiers.outputs.key_email }}
+      release_type: ${{ steps.generate-version-suffix.outputs.release_type }}
+      version_suffix: ${{ steps.generate-version-suffix.outputs.version_suffix }}
     steps:
       - uses: actions/setup-java@v4
         with:
@@ -58,6 +60,25 @@ jobs:
           cat << EndOfFile >> $GITHUB_OUTPUT
           key_fingerprint=$key_fingerprint
           key_email=$key_email
+          EndOfFile
+      - name: Check for default branch
+        id: generate-version-suffix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          default_branch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name ${{ github.repository }})
+   
+          if [[ "$default_branch" = $GITHUB_REF_NAME ]]; then
+            release_type="FULL_MAIN_BRANCH"
+            version_suffix=""
+          else
+            release_type="PREVIEW_FEATURE_BRANCH"
+            version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:-_]]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
+          fi
+          echo "current branch: $GITHUB_REF_NAME, release_type: $release_type, version_suffix: $version_suffix"
+          cat << EndOfFile >> $GITHUB_OUTPUT
+          release_type=$release_type
+          version_suffix=$version_suffix
           EndOfFile
 
   generate-version-update-commits:
@@ -77,7 +98,15 @@ jobs:
         run: |
           git config user.email "${{ needs.init.outputs.key_email }}"
           git config user.name "$COMMITTER_NAME"
-          sbt "release with-defaults"
+          
+          sbt_commands_file=$(mktemp)
+          cat << EndOfFile > $sbt_commands_file
+          set releaseVersion := releaseVersion.value.andThen(_ + "${{ needs.init.outputs.version_suffix }}")
+          release with-defaults
+          EndOfFile
+          cat $sbt_commands_file
+          sbt ";< $sbt_commands_file"
+          
           echo $GITHUB_WORKSPACE
           cd `mktemp -d`
           git clone --bare $GITHUB_WORKSPACE repo-with-unsigned-version-update-commits.git
@@ -100,6 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.create-commit.outputs.release_tag }}
+      release_version: ${{ steps.create-commit.outputs.release_version }}
       release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
     steps:
       - uses: actions/checkout@v4
@@ -143,12 +173,24 @@ jobs:
           
           cat << EndOfFile >> $GITHUB_OUTPUT
           release_tag=$RELEASE_TAG
+          release_version=${RELEASE_TAG#"v"}
           release_commit_id=$release_commit_id
           EndOfFile
           
           git log --format="%h %p %ce %s" --decorate=short -n3
           git status
-          git push
+          
+          if [ "${{ needs.init.outputs.release_type }}" == "FULL_MAIN_BRANCH" ]
+          then
+            echo "Full Main-Branch release, pushing 2 commits to the default branch"
+            git push # push 2 commits (non-snapshot release version, then new snapshot version) onto the default branch
+          else
+            tag_for_pushing="preliminary-${{ github.run_id }}"
+            echo "Preview Feature-Branch release, pushing 1 commit with the temporary tag $tag_for_pushing"
+            git tag -a -m "Tag created merely to allow _pushing_ the release commit, which gains the signed $RELEASE_TAG tag later on in the workflow" $tag_for_pushing $release_commit_id
+            git push origin $tag_for_pushing # push only the single release version commit with a disposable tag
+          fi
+          
 
   create-artifacts:
     name: 🎊 Create artifacts
@@ -240,7 +282,7 @@ jobs:
           echo "Message is..."
           cat tag-message.txt
           
-          echo "Creating tag"
+          echo "Creating release tag (including artifact hashes)"
           git tag -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
           
           echo "RELEASE_TAG=$RELEASE_TAG"
@@ -288,20 +330,62 @@ jobs:
           sbt "sonatypeBundleRelease"
 
   github-release:
-    name: 🔒 GitHub Release
-    needs:  [push-release-commit, sign]
+    name: 🔒 Update GitHub
+    needs:  [init, push-release-commit, sign]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     env:
       RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
+      RELEASE_VERSION: ${{ needs.push-release-commit.outputs.release_version }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
     steps:
+      - name: Common values
+        run: |
+          GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
+          GITHUB_WORKFLOW_FILE="release.yml" # Could be derived from $GITHUB_WORKFLOW_REF
+          GITHUB_WORKFLOW_URL="$GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE"
+          
+          cat << EndOfFile >> $GITHUB_ENV
+          GITHUB_WORKFLOW_FILE=$GITHUB_WORKFLOW_FILE
+          GITHUB_WORKFLOW_LINK=[GitHub UI]($GITHUB_WORKFLOW_URL)
+          GITHUB_WORKFLOW_RUN_LINK=[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})
+          EndOfFile
       - name: Create Github Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+        if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
         run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-      - name: Job summary
+          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
+          echo "GitHub Release notes: [$RELEASE_TAG]($GITHUB_REPO_URL/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
+      - name: Update PR with comment
+        if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
         run: |
-          echo "GitHub Release notes: [$RELEASE_TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
+          cat << EndOfFile > comment_body.txt
+          @${{github.actor}} has published a preview version of this PR with release workflow run $GITHUB_WORKFLOW_RUN_LINK, based on commit ${{ github.sha }}:
+          
+          $RELEASE_VERSION
+          
+          <details>
+          <summary>Want to make another preview release?</summary>
+          
+          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
+          
+          gh workflow run $GITHUB_WORKFLOW_FILE --ref $GITHUB_REF_NAME
+          
+          </details>
+          
+          <details>
+          <summary>Want to make a full release after this PR is merged?</summary>
+          
+          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
+          
+          gh workflow run $GITHUB_WORKFLOW_FILE
+          
+          </details>
+          EndOfFile
+          
+          cat comment_body.txt
+          
+          gh pr comment ${{ github.ref_name }} --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
