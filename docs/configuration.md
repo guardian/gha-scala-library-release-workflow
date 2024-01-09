@@ -99,6 +99,7 @@ These settings are now set by `gha-scala-library-release-workflow` and can be re
 or `sonatype.sbt` (`sonatype.sbt` can generally be deleted entirely):
 
 * `homepage`
+* `developers`
 * `pomExtra`
 * `publishTo`
 * `sonatypeProfileName`
