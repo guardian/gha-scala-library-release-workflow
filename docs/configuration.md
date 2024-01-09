@@ -49,40 +49,44 @@ to the workflow.
 [Example `version.sbt`](https://github.com/guardian/etag-caching/blob/main/version.sbt)
 
 * `version` - as [specified by `sbt-release`](https://github.com/sbt/sbt-release?tab=readme-ov-file#versionsbt), this
-  should be the sole entry in your `version.sbt` file, and during normal dev should define a version with a `-SNAPSHOT`
-  suffix. You can think of `-SNAPSHOT` as meaning 'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`,
-  you're working on a _preview_ of the forthcoming `1.4.7` release. The workflow will automatically update the `version`
-  during each release, as appropriate.
+  should be the sole entry in your `version.sbt` file, and during normal dev should define a **semver** version
+  (`major.minor.patch`) with a `-SNAPSHOT` suffix (eg `1.4.7-SNAPSHOT`). You can think of `-SNAPSHOT` as meaning
+  'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`, you're working on a _preview_ of the forthcoming
+  `1.4.7` release. The workflow will automatically update the `version` during each release, as appropriate.
 
 [Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt)
-* `organization` - this dictates the [groupId](https://maven.apache.org/guides/mini/guide-naming-conventions.html) of
-  your artifacts, and can be either the same as your Sonatype account profile name (eg `com.gu` for the Guardian),
-  or a dot-suffixed version of it (eg `com.gu.foobar`) if your project ('foobar') releases multiple artifacts
-  [_(details)_](https://github.com/guardian/gha-scala-library-release-workflow/pull/15)
-* `licenses := Seq(License.Apache2)` - or whatever license you're using. Specifying a license is
-  [*required*](https://central.sonatype.org/publish/requirements/#license-information) for submitting artifacts
-  to Maven Central.
-* `releaseVersion := fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
-  automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
-  can go up by more than just an `x.x.PATCH` increment in a release, if
-  [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy)
-  say that it should.
-* `scalacOptions` should include `-release:11` (available with Scala [2.13.9](https://www.scala-lang.org/news/2.13.9)
-  and above, also known as `-java-output-version`
-  [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)) -
-  the workflow will always use one of the most recent LTS releases of Java
-  [supported by Scala](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html),
-  but the generated class files will be compatible with whichever version of Java you target.
-* `publish / skip := true` (rather than other legacy hacks like `publishArtifact := false`) for
-  sbt modules that don't generate artifacts (often, the 'root' project in a multi-project build). This
-  setting is respected by `sbt-version-policy` - it won't attempt to calculate compatibility on a module
-  that doesn't publish artifacts.
-* In `releaseProcess`, you'll want _fewer_ steps than
-  [the old list specified by `sbt-sonatype`](https://github.com/xerial/sbt-sonatype?tab=readme-ov-file#using-with-sbt-release-plugin),
-  now just:
-  `checkSnapshotDependencies, inquireVersions, runClean, runTest, setReleaseVersion, commitReleaseVersion, tagRelease, setNextVersion, commitNextVersion`
-  _([if your tests require special privileges](https://github.com/guardian/facia-scala-client/pull/299/files#r1425649126)
-  you may need to drop `runTest`)_
+* Artifact-producing modules
+  * `organization` - this dictates the [groupId](https://maven.apache.org/guides/mini/guide-naming-conventions.html) of
+    your artifacts, and can be either the same as your Sonatype account profile name (eg `com.gu` for the Guardian),
+    or a dot-suffixed version of it (eg `com.gu.foobar`) if your project ('foobar') releases multiple artifacts
+    [_(details)_](https://github.com/guardian/gha-scala-library-release-workflow/pull/15)
+  * `licenses := Seq(License.Apache2)` - or whatever license you're using. Specifying a license is
+    [*required*](https://central.sonatype.org/publish/requirements/#license-information) for submitting artifacts
+    to Maven Central.
+  * `scalacOptions` should include `-release:11` (available with Scala [2.13.9](https://www.scala-lang.org/news/2.13.9)
+    and above, also known as `-java-output-version`
+    [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)) -
+    the workflow will always use one of the most recent LTS releases of Java
+    [supported by Scala](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html),
+    but the generated class files will be compatible with whichever version of Java you target.
+* Top-level 'release' module - if your project has a [multi-module](https://www.scala-sbt.org/1.x/docs/Multi-Project.html)
+  build this could be called 'root', or, if your project only has one module, it and your
+  artifact-producing module could be the same thing, and just use top-level settings.
+  * `publish / skip := true` (rather than other legacy hacks like `publishArtifact := false`) for
+    sbt modules that don't generate artifacts (often, the 'root' project in a multi-project build). This
+    setting is respected by `sbt-version-policy` - it won't attempt to calculate compatibility on a module
+    that doesn't publish artifacts.
+  * In `releaseProcess`, you'll want _fewer_ steps than
+    [the old list specified by `sbt-sonatype`](https://github.com/xerial/sbt-sonatype?tab=readme-ov-file#using-with-sbt-release-plugin),
+    now just:
+    `checkSnapshotDependencies, inquireVersions, runClean, runTest, setReleaseVersion, commitReleaseVersion, tagRelease, setNextVersion, commitNextVersion`
+    _([if your tests require special privileges](https://github.com/guardian/facia-scala-client/pull/299/files#r1425649126)
+    you may need to drop `runTest`)_
+  * `releaseVersion := fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
+      automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
+      can go up by more than just an `x.x.PATCH` increment in a release, if
+      [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy)
+      say that it should.
 
 ### Unnecessary `sbt` plugins
 
