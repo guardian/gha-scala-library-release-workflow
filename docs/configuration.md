@@ -82,11 +82,12 @@ to the workflow.
     `checkSnapshotDependencies, inquireVersions, runClean, runTest, setReleaseVersion, commitReleaseVersion, tagRelease, setNextVersion, commitNextVersion`
     _([if your tests require special privileges](https://github.com/guardian/facia-scala-client/pull/299/files#r1425649126)
     you may need to drop `runTest`)_
-  * `releaseVersion := fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
+  * `releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
       automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
       can go up by more than just an `x.x.PATCH` increment in a release, if
       [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy)
-      say that it should.
+      say that it should. You'll need `import sbtversionpolicy.withsbtrelease.ReleaseVersion` at the top of your  `build.sbt`
+      to access this method.
 
 ### Unnecessary `sbt` plugins
 
