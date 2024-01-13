@@ -1,7 +1,8 @@
 # Configuration
 
-Configuring a repo to use `gha-scala-library-release-workflow` requires a `release.yml` GitHub workflow in your repo,
-and updated `sbt` settings.
+Start here if you're setting up a repo use `gha-scala-library-release-workflow`!
+
+The workflow needs a `release.yml` GitHub workflow in your repo, and updated `sbt` settings.
 
 [Example GitHub pull requests](#examples) making these changes can be found further below.
 
@@ -49,8 +50,8 @@ to the workflow.
 [Example `version.sbt`](https://github.com/guardian/etag-caching/blob/main/version.sbt)
 
 * `version` - as [specified by `sbt-release`](https://github.com/sbt/sbt-release?tab=readme-ov-file#versionsbt), this
-  should be the sole entry in your `version.sbt` file, and during normal dev should define a **semver** version
-  (`major.minor.patch`) with a `-SNAPSHOT` suffix (eg `1.4.7-SNAPSHOT`). You can think of `-SNAPSHOT` as meaning
+  should be the sole entry in your `version.sbt` file, and should define a **semver** version (`major.minor.patch`),
+  which during normal dev has a `-SNAPSHOT` suffix (eg `1.4.7-SNAPSHOT`). You can think of `-SNAPSHOT` as meaning
   'a snapshot preview' - so when you're working on `1.4.7-SNAPSHOT`, you're working on a _preview_ of the forthcoming
   `1.4.7` release. The workflow will automatically update the `version` during each release, as appropriate.
 
