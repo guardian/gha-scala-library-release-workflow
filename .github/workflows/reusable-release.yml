@@ -61,6 +61,10 @@ jobs:
           key_fingerprint=$key_fingerprint
           key_email=$key_email
           EndOfFile
+          if ! [[ "$key_fingerprint" =~ ^[[:xdigit:]]{8,}$ ]]; then
+            echo "::error title=Missing PGP key::Has PGP_PRIVATE_KEY been set correctly? https://github.com/guardian/gha-scala-library-release-workflow/blob/main/docs/credentials/supplying-credentials.md"
+            exit 1
+          fi
       - name: Check for default branch
         id: generate-version-suffix
         env:
