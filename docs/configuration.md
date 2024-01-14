@@ -26,7 +26,7 @@ don't copy-and-paste that big file, instead just make a small `release.yml` work
 [_call_](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow)
 it (as in the example file above).
 
-Your repo will require access to [release credentials](credentials.md) to
+Your repo will require access to [release credentials](credentials/supplying-credentials.md) to
 [pass on those secrets](https://github.com/guardian/etag-caching/blob/9935da29e76b8b89759bcfe967cc7c1c02aa1814/.github/workflows/release.yml#L11-L13)
 to the workflow.
 
