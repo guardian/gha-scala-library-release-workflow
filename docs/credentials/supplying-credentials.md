@@ -14,8 +14,13 @@ has _access_ to those secrets.
 ### Guardian-specific access
 
 **Guardian developers:** We use [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access)
-to grant repos access to the `AUTOMATED_MAVEN_RELEASE_PGP_SECRET` & `AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD`
-secrets - you need to raise a PR there (like [this example PR](https://github.com/guardian/github-secret-access/pull/24))
+to grant repos access to these secrets:
+
+* `AUTOMATED_MAVEN_RELEASE_SONATYPE_TOKEN`
+* `AUTOMATED_MAVEN_RELEASE_PGP_SECRET`
+
+You need to raise a PR on the `guardian/github-secret-access` repo (like
+[this example PR](https://github.com/guardian/github-secret-access/pull/24))
 to grant your repo access to the organisation-wide secrets.
 
 ### Generating new credentials
