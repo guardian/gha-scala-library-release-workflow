@@ -20,14 +20,9 @@ on:
         default: 'oss.sonatype.org' # The default host is going to be whatever "com.gu" is using
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
         type: string
-      SONATYPE_USERNAME:
-        description: 'Sonatype username'
-        default: 'guardian.automated.maven.release' # Only for use by the Guardian!
-        required: false # Must be supplied if used by a non-Guardian project
-        type: string
     secrets:
-      SONATYPE_PASSWORD:
-        description: 'Password for the SONATYPE_USERNAME account - used to authenticate when uploading artifacts'
+      SONATYPE_TOKEN:
+        description: 'Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/'
         required: true
       PGP_PRIVATE_KEY:
         description:
@@ -416,9 +411,10 @@ jobs:
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - name: Release
         env:
-          SONATYPE_USERNAME: ${{ inputs.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
+          export SONATYPE_USERNAME="${SONATYPE_TOKEN%%:*}" # See https://github.com/xerial/sbt-sonatype/pull/62
+          export SONATYPE_PASSWORD="${SONATYPE_TOKEN#*:}"
           sbt "sonatypeBundleRelease"
 
   github-release:

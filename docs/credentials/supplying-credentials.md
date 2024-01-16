@@ -20,7 +20,7 @@ has _access_ to those secrets.
 to grant repos access to the necessary Organisation secrets - you need to raise a PR (like [this example PR](https://github.com/guardian/github-secret-access/pull/24))
 which will grant access to these:
 
-* `AUTOMATED_MAVEN_RELEASE_SONATYPE_PASSWORD`
+* `AUTOMATED_MAVEN_RELEASE_SONATYPE_TOKEN`
 * `AUTOMATED_MAVEN_RELEASE_PGP_SECRET`
 * `AUTOMATED_MAVEN_RELEASE_GITHUB_APP_PRIVATE_KEY`
 
