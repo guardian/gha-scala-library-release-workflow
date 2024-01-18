@@ -120,7 +120,7 @@ jobs:
       - name: Job summary
         run: |
           echo "# Release $(git describe --tags --abbrev=0)" >> $GITHUB_STEP_SUMMARY
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         with:
           path: repo-with-unsigned-version-update-commits.git
           key: repo-with-unsigned-version-update-commits-${{ env.RUN_ATTEMPT_UID }}
@@ -139,7 +139,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: repo
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: repo-with-unsigned-version-update-commits.git
           key: repo-with-unsigned-version-update-commits-${{ env.RUN_ATTEMPT_UID }}
@@ -231,7 +231,7 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         id: cache
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
@@ -248,7 +248,7 @@ jobs:
         with:
           path: repo
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: unsigned-${{ env.RUN_ATTEMPT_UID }}
@@ -293,7 +293,7 @@ jobs:
           
           echo "Pushing tag $RELEASE_TAG"
           git push origin $RELEASE_TAG
-      - uses: actions/cache/save@v3
+      - uses: actions/cache/save@v4
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: signed-${{ env.RUN_ATTEMPT_UID }}
@@ -303,7 +303,7 @@ jobs:
     needs: sign
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
           key: signed-${{ env.RUN_ATTEMPT_UID }}
