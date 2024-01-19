@@ -28,6 +28,10 @@ on:
           Should be in normal plaintext 'BEGIN PGP PUBLIC KEY BLOCK' (ASCII-armored) format, with no additional BASE64-encoding.
           The passphrase can be removed from an existing key using 'gpg --edit-key <key-id> passwd' : https://unix.stackexchange.com/a/550538/46453"
         required: true
+    outputs:
+      RELEASE_VERSION:
+        description: "The un-prefixed version number of the release, eg '3.0.1'"
+        value: ${{ jobs.push-release-commit.outputs.release_version }}
 
 env:
   LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
