@@ -32,6 +32,9 @@ on:
       RELEASE_VERSION:
         description: "The un-prefixed version number of the release, eg '3.0.1'"
         value: ${{ jobs.push-release-commit.outputs.release_version }}
+      RELEASE_TYPE:
+        description: "Either 'FULL_MAIN_BRANCH' or 'PREVIEW_FEATURE_BRANCH' - whether this is a full release or a pre-release"
+        value: ${{ jobs.init.outputs.release_type }}
 
 env:
   LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
