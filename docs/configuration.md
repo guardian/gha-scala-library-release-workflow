@@ -1,16 +1,20 @@
 # Configuration
 
-Start here if you're setting up a repo use `gha-scala-library-release-workflow`!
+Start here if you're setting up a repo use `gha-scala-library-release-workflow`! If your organisation has never used
+`gha-scala-library-release-workflow` before, you'll need to follow the instructions in
+[Organisation Setup](org-setup.md) first.
 
-The workflow needs a `release.yml` GitHub workflow in your repo, and updated `sbt` settings.
+The release workflow needs a `release.yml` GitHub workflow in your repo, and specific updated `sbt` settings.
 
 [Example GitHub pull requests](#examples) making these changes can be found further below.
 
 ## Repo settings
 
-* Disable [Branch Protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-  on any branch the workflow will be pushing to (ie the default branch). See issue
-  https://github.com/guardian/gha-scala-library-release-workflow/issues/5.
+* Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+  on any branch the workflow will be pushing to (ie the default branch). Note that
+  PR https://github.com/guardian/gha-scala-library-release-workflow/pull/26 means that you _can_ use
+  branch protection **rulesets** to protect your default branch, so long as you allow your GitHub App
+  to bypass those restrictions.
 * **Guardian developers:** comply with the repository requirements of
   [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
   i.e. ensure the repository has a `production` topic label.
