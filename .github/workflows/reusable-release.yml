@@ -84,7 +84,7 @@ jobs:
             version_suffix=""
           else
             release_type="PREVIEW_FEATURE_BRANCH"
-            version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:]-_]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
+            version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:]-]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
           fi
           echo "current branch: $GITHUB_REF_NAME, release_type: $release_type, version_suffix: $version_suffix"
           cat << EndOfFile >> $GITHUB_OUTPUT
