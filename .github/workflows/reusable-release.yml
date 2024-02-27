@@ -3,6 +3,13 @@ name: Scala Library Release Workflow
 on:
   workflow_call:
     inputs:
+      GITHUB_APP_ID:
+        description:
+          "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
+          https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
+        default: '807361' # Only for use by the Guardian!
+        required: false # ...but if you're not the Guardian, you'll want to set this explicitly
+        type: string
       SONATYPE_PROFILE_NAME:
         description: 'Sonatype account profile name, eg "com.gu", "org.xerial", etc (not your Sonatype username)'
         default: 'com.gu' # Only for use by the Guardian!
@@ -25,8 +32,13 @@ on:
       PGP_PRIVATE_KEY:
         description:
           "A passphrase-less PGP private key used to sign artifacts, commits, & tags.
-          Should be in normal plaintext 'BEGIN PGP PUBLIC KEY BLOCK' (ASCII-armored) format, with no additional BASE64-encoding.
+          Should be in normal plaintext (ASCII-armored) format, starting 'BEGIN PGP PUBLIC KEY BLOCK', with no additional BASE64-encoding.
           The passphrase can be removed from an existing key using 'gpg --edit-key <key-id> passwd' : https://unix.stackexchange.com/a/550538/46453"
+        required: true
+      GITHUB_APP_PRIVATE_KEY:
+        description:
+          "See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys
+          Should be in normal plaintext format, starting '-----BEGIN RSA PRIVATE KEY-----'"
         required: true
     outputs:
       RELEASE_VERSION:
@@ -40,6 +52,8 @@ env:
   LOCAL_ARTIFACTS_STAGING_PATH: /tmp/artifact_staging
   COMMITTER_NAME: "@${{github.actor}} using gha-scala-library-release-workflow"
   RUN_ATTEMPT_UID: ${{ github.run_id }}-${{ github.run_attempt }}
+  TEMPORARY_BRANCH: release-workflow/temporary/${{ github.run_id }}
+  GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
 
 jobs:
   init:
@@ -142,7 +156,15 @@ jobs:
       release_tag: ${{ steps.create-commit.outputs.release_tag }}
       release_version: ${{ steps.create-commit.outputs.release_version }}
       release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
+      version_file_path: ${{ steps.create-commit.outputs.version_file_path }}
+      version_file_release_sha: ${{ steps.create-commit.outputs.version_file_release_sha }}
+      version_file_post_release_content: ${{ steps.create-commit.outputs.version_file_post_release_content }}
     steps:
+      - id: generate-github-app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ inputs.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
       - uses: actions/checkout@v4
         with:
           path: repo
@@ -161,6 +183,8 @@ jobs:
         env:
           KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
           KEY_EMAIL: ${{ needs.init.outputs.key_email }}
+          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
           echo "GITHUB_REF=$GITHUB_REF"
@@ -169,38 +193,48 @@ jobs:
           RELEASE_TAG=$(git describe --tags --abbrev=0)
           
           cd ../repo
-          git status
-          git config user.email "$KEY_EMAIL"
-          git config user.name "$COMMITTER_NAME"
-          git config commit.gpgsign true
-          git config user.signingkey "$KEY_FINGERPRINT"
           
           git remote add unsigned ../repo-with-unsigned-version-update-commits.git
           git fetch unsigned
-          git cherry-pick -S$KEY_FINGERPRINT $GITHUB_REF_NAME..unsigned/$GITHUB_REF_NAME
-          git status
           
-          release_commit_id=$(git rev-parse HEAD^)
+          RELEASE_VERSION=${RELEASE_TAG#"v"}
+          VERSION_FILE_PATH=$(git diff-tree --no-commit-id --name-only -r $RELEASE_TAG | grep version.sbt)
+          VERSION_FILE_INITIAL_SHA=$( git rev-parse $GITHUB_REF:$VERSION_FILE_PATH )
+          VERSION_FILE_RELEASE_SHA=$( git rev-parse $RELEASE_TAG:$VERSION_FILE_PATH )
+          VERSION_FILE_RELEASE_CONTENT=$( git cat-file blob $RELEASE_TAG:$VERSION_FILE_PATH | base64 )
+          VERSION_FILE_POST_RELEASE_CONTENT=$( git cat-file blob unsigned/$GITHUB_REF_NAME:$VERSION_FILE_PATH | base64 )
+
+          cd ..
           
+          cat << EndOfFile > commit-message.txt
+          $RELEASE_TAG published by ${{github.actor}}
+          
+          ${{github.actor}} published release version $RELEASE_VERSION
+          using gha-scala-library-release-workflow: https://github.com/guardian/gha-scala-library-release-workflow
+
+          Release-Version: $RELEASE_VERSION
+          Release-Initiated-By: ${{ github.server_url }}/${{github.actor}}
+          Release-Workflow-Run: $GITHUB_REPO_URL/actions/runs/${{ github.run_id }}
+          GitHub-Release-Notes: $GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+          EndOfFile
+
+          # Create temporary branch to push the release commit- required for PREVIEW releases
+          gh api --method POST /repos/:owner/:repo/git/refs -f ref="refs/heads/$TEMPORARY_BRANCH" -f sha="$GITHUB_SHA"
+
+          release_commit_id=$(gh api --method PUT /repos/:owner/:repo/contents/$VERSION_FILE_PATH \
+            --field branch="$TEMPORARY_BRANCH" \
+            --field message="@commit-message.txt" \
+            --field sha="$VERSION_FILE_INITIAL_SHA" \
+            --field content="$VERSION_FILE_RELEASE_CONTENT" --jq '.commit.sha')
+                    
           cat << EndOfFile >> $GITHUB_OUTPUT
           release_tag=$RELEASE_TAG
-          release_version=${RELEASE_TAG#"v"}
+          release_version=$RELEASE_VERSION
           release_commit_id=$release_commit_id
+          version_file_path=$VERSION_FILE_PATH
+          version_file_release_sha=$VERSION_FILE_RELEASE_SHA
+          version_file_post_release_content=$VERSION_FILE_POST_RELEASE_CONTENT
           EndOfFile
-          
-          git log --format="%h %p %ce %s" --decorate=short -n3
-          git status
-          
-          if [ "${{ needs.init.outputs.release_type }}" == "FULL_MAIN_BRANCH" ]
-          then
-            echo "Full Main-Branch release, pushing 2 commits to the default branch"
-            git push # push 2 commits (non-snapshot release version, then new snapshot version) onto the default branch
-          else
-            tag_for_pushing="preliminary-${{ github.run_id }}"
-            echo "Preview Feature-Branch release, pushing 1 commit with the temporary tag $tag_for_pushing"
-            git tag -a -m "Tag created merely to allow _pushing_ the release commit, which gains the signed $RELEASE_TAG tag later on in the workflow" $tag_for_pushing $release_commit_id
-            git push origin $tag_for_pushing # push only the single release version commit with a disposable tag
-          fi
           
 
   create-artifacts:
@@ -251,10 +285,18 @@ jobs:
     env:
       KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
     steps:
+      - id: generate-github-app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ inputs.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
       - uses: actions/checkout@v4
         with:
           path: repo
           ref: ${{ needs.push-release-commit.outputs.release_commit_id }}
+          fetch-depth: 2 # To fast-forward the main branch, we need the commit on main, as well as the release commit
+          token: ${{ steps.generate-github-app-token.outputs.token }}
+          persist-credentials: true # Allow us to push as the GitHub App, and bypass branch ruleset
       - uses: actions/cache/restore@v4
         with:
           path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
@@ -276,13 +318,18 @@ jobs:
           ARTIFACT_SHA256SUMS: ${{ needs.create-artifacts.outputs.ARTIFACT_SHA256SUMS }}
           KEY_EMAIL: ${{ needs.init.outputs.key_email }}
         run: |
-          echo "RELEASE_TAG=$RELEASE_TAG"
-          echo "RELEASE_COMMIT_ID=$RELEASE_COMMIT_ID"
           cd repo
           git config user.email "$KEY_EMAIL"
           git config user.name "$COMMITTER_NAME"
           git config tag.gpgSign true
           git config user.signingkey "$KEY_FINGERPRINT"
+          
+          if [ "${{ needs.init.outputs.release_type }}" == "FULL_MAIN_BRANCH" ]
+          then
+            echo "Full Main-Branch release, fast-forwarding the default branch to the release commit"
+            git log --oneline -n 3
+            git push origin $RELEASE_COMMIT_ID:refs/heads/$GITHUB_REF_NAME
+          fi
           
           cat << EndOfFile > tag-message.txt
           Release $RELEASE_TAG initiated by $COMMITTER_NAME
@@ -295,8 +342,6 @@ jobs:
           
           echo "Creating release tag (including artifact hashes)"
           git tag -a -F tag-message.txt $RELEASE_TAG $RELEASE_COMMIT_ID
-          
-          echo "RELEASE_TAG=$RELEASE_TAG"
           
           echo "Pushing tag $RELEASE_TAG"
           git push origin $RELEASE_TAG
@@ -350,10 +395,18 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
       RELEASE_VERSION: ${{ needs.push-release-commit.outputs.release_version }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
     steps:
+      - id: generate-github-app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ inputs.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+      - name: Clean-up temporary branch that was retaining the now-tagged release commit
+        env:
+          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+        run: |
+          gh api --method DELETE /repos/:owner/:repo/git/refs/heads/$TEMPORARY_BRANCH
       - name: Common values
         run: |
           GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
@@ -365,13 +418,28 @@ jobs:
           GITHUB_WORKFLOW_LINK=[GitHub UI]($GITHUB_WORKFLOW_URL)
           GITHUB_WORKFLOW_RUN_LINK=[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})
           EndOfFile
-      - name: Create Github Release
+      - name: Create Github Release and update version.sbt post-release
         if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
+        env:
+          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
         run: |
           gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
           echo "GitHub Release notes: [$RELEASE_TAG]($GITHUB_REPO_URL/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
+          
+          cat << EndOfFile > commit-message.txt
+          Post-release of $RELEASE_TAG by @${{github.actor}}: set snapshot version
+          
+          Setting snapshot version after @${{github.actor}} published $GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+          EndOfFile
+          
+          gh api --method PUT /repos/:owner/:repo/contents/${{ needs.push-release-commit.outputs.version_file_path }} \
+            --field message="@commit-message.txt" \
+            --field sha="${{ needs.push-release-commit.outputs.version_file_release_sha }}" \
+            --field content="${{ needs.push-release-commit.outputs.version_file_post_release_content }}"
       - name: Update PR with comment
         if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
+        env:
+          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
         run: |
           cat << EndOfFile > comment_body.txt
           @${{github.actor}} has published a preview version of this PR with release workflow run $GITHUB_WORKFLOW_RUN_LINK, based on commit ${{ github.sha }}:
