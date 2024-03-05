@@ -225,7 +225,7 @@ jobs:
           gh api --verbose --method POST /repos/:owner/:repo/git/refs -f ref="refs/heads/$TEMPORARY_BRANCH" -f sha="$GITHUB_SHA"
 
           echo "Pushing the release commit"
-          release_commit_id=$(gh api --verbose --method PUT /repos/:owner/:repo/contents/$VERSION_FILE_PATH \
+          release_commit_id=$(gh api --method PUT /repos/:owner/:repo/contents/$VERSION_FILE_PATH \
             --field branch="$TEMPORARY_BRANCH" \
             --field message="@commit-message.txt" \
             --field sha="$VERSION_FILE_INITIAL_SHA" \
