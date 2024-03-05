@@ -201,8 +201,8 @@ jobs:
           VERSION_FILE_PATH=$(git diff-tree --no-commit-id --name-only -r $RELEASE_TAG | grep version.sbt)
           VERSION_FILE_INITIAL_SHA=$( git rev-parse $GITHUB_REF:$VERSION_FILE_PATH )
           VERSION_FILE_RELEASE_SHA=$( git rev-parse $RELEASE_TAG:$VERSION_FILE_PATH )
-          VERSION_FILE_RELEASE_CONTENT=$( git cat-file blob $RELEASE_TAG:$VERSION_FILE_PATH | base64 )
-          VERSION_FILE_POST_RELEASE_CONTENT=$( git cat-file blob unsigned/$GITHUB_REF_NAME:$VERSION_FILE_PATH | base64 )
+          VERSION_FILE_RELEASE_CONTENT=$( git cat-file blob $RELEASE_TAG:$VERSION_FILE_PATH | base64 -w0)
+          VERSION_FILE_POST_RELEASE_CONTENT=$( git cat-file blob unsigned/$GITHUB_REF_NAME:$VERSION_FILE_PATH | base64 -w0)
 
           cd ..
           
