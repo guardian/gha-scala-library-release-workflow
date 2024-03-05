@@ -105,6 +105,7 @@ jobs:
           release_type=$release_type
           version_suffix=$version_suffix
           EndOfFile
+          cat $GITHUB_OUTPUT
 
   generate-version-update-commits:
     name: 🎊 Test & Version
