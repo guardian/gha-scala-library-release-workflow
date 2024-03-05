@@ -236,6 +236,7 @@ jobs:
           version_file_release_sha=$VERSION_FILE_RELEASE_SHA
           version_file_post_release_content=$VERSION_FILE_POST_RELEASE_CONTENT
           EndOfFile
+          cat $GITHUB_OUTPUT
           
 
   create-artifacts:
