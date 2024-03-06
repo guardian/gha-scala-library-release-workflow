@@ -352,7 +352,7 @@ jobs:
 
   sonatype-release:
     name: 🔒 Sonatype Release
-    needs: sign
+    needs: [push-release-commit, sign]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/cache/restore@v4
@@ -366,11 +366,12 @@ jobs:
           sonatypeBundleDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
           sonatypeProfileName := "${{ inputs.SONATYPE_PROFILE_NAME }}"
           sonatypeCredentialHost := "${{ inputs.SONATYPE_CREDENTIAL_HOST }}"
+          version := "${{ needs.push-release-commit.outputs.release_version }}"
           EndOfFile
           
           mkdir project
-          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.21")' > project/plugins.sbt
-          echo 'sbt.version = 1.9.8' > project/build.properties
+          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.10.0")' > project/plugins.sbt
+          echo 'sbt.version = 1.9.9' > project/build.properties
           
           ls -lR .
       - uses: actions/setup-java@v4
