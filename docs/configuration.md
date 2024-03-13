@@ -13,10 +13,11 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 * Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
   on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use branch protection rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
 ### Guardian developers 
-* Set the custom property `production_status` to `production` to apply  branch protection to the default branch via a ruleset (this allows the Scala release app to bypass branch protection).
-* Create a separate 'Status checks' ruleset in your repo with the Branch protection property 'Require status checks to pass' -> 'Require branches to be up to date before merging' and add your repo's status check(s) to the 'Status checks that are required' list. For example, if your repo has a CI workflow with the name 'CI', then the setting would look like this:
-![status_checks.png](status_checks.png)
-* Also add the Scala release app to the ruleset bypass list as in the branch protection ruleset.
+* Re-enable branch protections:
+  * Set the custom property `production_status` to `production` to apply  branch protection to the default branch via a ruleset (this allows the Scala release app to bypass branch protection).
+  * Create a separate 'Status checks' ruleset in your repo with the Branch protection property 'Require status checks to pass' -> 'Require branches to be up to date before merging' and add your repo's workflow name(s) to the 'Status checks that are required' list. For example, if your repo has a CI workflow with the name 'CI', then the setting would look like this:
+  ![status_checks.png](status_checks.png)
+  * Add the Scala release app to the ruleset bypass list (see the 'Branch protection' ruleset for an example).
 * Comply with the repository requirements of
   [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
   i.e. ensure the repository has a `production` topic label.
