@@ -10,6 +10,11 @@ on:
         default: '807361' # Only for use by the Guardian!
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
         type: string
+      LIBRARY_BUILD_JAVA_VERSION_FILE:
+        description: "Path within the repo to the java-version-file - see https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#java-version-file"
+        default: '.tool-versions' # as used by https://asdf-vm.com/
+        required: false
+        type: string
       SONATYPE_PROFILE_NAME:
         description: 'Sonatype account profile name, eg "com.gu", "org.xerial", etc (not your Sonatype username)'
         default: 'com.gu' # Only for use by the Guardian!
@@ -54,6 +59,7 @@ env:
   RUN_ATTEMPT_UID: ${{ github.run_id }}-${{ github.run_attempt }}
   TEMPORARY_BRANCH: release-workflow/temporary/${{ github.run_id }}
   GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+  LATEST_LTS_JAVA_VERSION: '21' # Used by all parts of the workflow that are not invoking the library's build process
 
 jobs:
   init:
@@ -68,7 +74,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
-          java-version: 17
+          java-version: ${{ env.LATEST_LTS_JAVA_VERSION }}
           gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Read Identifiers from Signing Key
         id: read-identifiers
@@ -115,7 +121,7 @@ jobs:
       - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
         with:
           distribution: corretto
-          java-version: 17
+          java-version-file: ${{ inputs.LIBRARY_BUILD_JAVA_VERSION_FILE }}
 #      - name: Debug MIMA assessment
 #        run: |
 #          sbt "show versionPolicyFindIssues"
@@ -176,7 +182,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
-          java-version: 17
+          java-version: ${{ env.LATEST_LTS_JAVA_VERSION }}
           gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Create commit
         id: create-commit
@@ -250,7 +256,7 @@ jobs:
       - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is resolved
         with:
           distribution: corretto
-          java-version: 17
+          java-version-file: ${{ inputs.LIBRARY_BUILD_JAVA_VERSION_FILE }}
       - name: Generate artifacts
         run: |
           cat << EndOfFile > sbt-commands.txt
@@ -305,7 +311,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
-          java-version: 17
+          java-version: ${{ env.LATEST_LTS_JAVA_VERSION }}
           gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
       - name: Sign artifacts
         run: |
@@ -377,7 +383,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
-          java-version: 17
+          java-version: ${{ env.LATEST_LTS_JAVA_VERSION }}
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - name: Release
         env:
