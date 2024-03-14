@@ -11,7 +11,7 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 ## Repo settings
 
 * Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-  on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use branch protection rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
+  on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
 ### Guardian developers 
 * Re-enable branch protections:
   * Set the custom property `production_status` to `production` to apply  branch protection to the default branch via a ruleset (this allows the Scala release app to bypass branch protection).
