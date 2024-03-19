@@ -15,7 +15,7 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 ### Guardian developers 
 * Enable branch protection rulesets:
   * Set the custom property `production_status` to `production` to apply  branch protection to the default branch via a ruleset (this allows the Scala release app to bypass branch protection).
-  * Create a separate 'Status checks' ruleset in your repo with the Branch protection property 'Require status checks to pass' -> 'Require branches to be up to date before merging' and add your repo's workflow name(s) to the 'Status checks that are required' list. For example, if your repo has a CI workflow with the name 'CI', then the setting would look like this:
+  * Create a second ruleset in your repo with the Branch protection property 'Require status checks to pass' -> 'Require branches to be up to date before merging'. Type your repo's workflow name(s) (not to be confused with the filename) into the 'Status checks that are required' box. For example, if your repo has a CI workflow with the name 'CI', then the setting would look like this:
   ![status_checks.png](status_checks.png)
   * Add the Scala release app to the ruleset bypass list (see the 'Branch protection' ruleset for an example).
 * Comply with the repository requirements of
