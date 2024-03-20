@@ -12,16 +12,12 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 
 * Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
   on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
-### Guardian developers 
-* Enable branch protection rulesets:
-  * Set the custom property `production_status` to `production` to apply  branch protection to the default branch via a ruleset (this allows the Scala release app to bypass branch protection).
-  * Create a second ruleset in your repo with the Branch protection property 'Require status checks to pass' -> 'Require branches to be up to date before merging'. Type your repo's workflow name(s) (not to be confused with the filename) into the 'Status checks that are required' box. For example, if your repo has a CI workflow with the name 'CI', then the setting would look like this:
-  ![status_checks.png](status_checks.png)
-  * Add the Scala release app to the ruleset bypass list (see the 'Branch protection' ruleset for an example).
-* Comply with the repository requirements of
-  [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
-  i.e. ensure the repository has a `production` topic label.
-
+* **Guardian developers:** 
+  * Comply with the repository requirements of
+      [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
+      i.e. ensure the repository has a `production` Topic label
+  * [Re-enable branch protection via rulesets](https://github.com/guardian/recommendations/blob/main/github-rulesets.md).
+  
 ## GitHub workflow
 
 [Example `.github/workflows/release.yml`](https://github.com/guardian/etag-caching/blob/main/.github/workflows/release.yml)
