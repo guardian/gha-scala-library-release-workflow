@@ -10,6 +10,10 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 
 ## Repo settings
 
+* Ensure [your GitHub App](github-app.md) has access to your repo. **Guardian developers:** click
+  `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app,
+  so long as you have admin permissions on your repo, you should be able to add your repo to the list
+  of select repositories the app has access to.
 * Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
   on any branch the workflow will be pushing to (ie the default branch). Note that
   PR https://github.com/guardian/gha-scala-library-release-workflow/pull/26 means that you _can_ use
