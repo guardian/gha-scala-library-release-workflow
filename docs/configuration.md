@@ -15,14 +15,13 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
   so long as you have admin permissions on your repo, you should be able to add your repo to the list
   of select repositories the app has access to.
 * Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-  on any branch the workflow will be pushing to (ie the default branch). Note that
-  PR https://github.com/guardian/gha-scala-library-release-workflow/pull/26 means that you _can_ use
-  branch protection **rulesets** to protect your default branch, so long as you allow your GitHub App
-  to bypass those restrictions.
-* **Guardian developers:** comply with the repository requirements of
-  [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
-  i.e. ensure the repository has a `production` topic label.
-
+  on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
+* **Guardian developers:** 
+  * Comply with the repository requirements of
+      [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
+      i.e. ensure the repository has a `production` Topic label
+  * [Re-enable branch protection via rulesets](https://github.com/guardian/recommendations/blob/main/github-rulesets.md).
+  
 ## GitHub workflow
 
 [Example `.github/workflows/release.yml`](https://github.com/guardian/etag-caching/blob/main/.github/workflows/release.yml)
