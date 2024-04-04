@@ -3,7 +3,7 @@ _Publishing Scala libraries to Maven Central using GitHub Actions (GHA), keeping
 
 ![image](https://github.com/guardian/gha-scala-library-release-workflow/assets/52038/3d229ccd-e60f-44f7-86e7-0e607134e47b)
 
-This workflow is a good choice if your organisation has lots of developers who want an easy, secure, _low-config_ way
+This workflow is a good choice if your organisation has lots of developers who want a secure, _low-config_ way
 to publish releases of Scala libraries!
 
 See the docs for information on:
