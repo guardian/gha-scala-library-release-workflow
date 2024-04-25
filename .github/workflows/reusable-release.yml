@@ -310,6 +310,7 @@ jobs:
           printf "$ARTIFACT_SHA256SUMS" > $ARTIFACT_SHA256SUMS_FILE
           
           cd $LOCAL_ARTIFACTS_STAGING_PATH
+          touch pretend-suspicious-file
           echo "Checking artifact hashes..."
           if [[ $(sha256deep -r -l -X "$ARTIFACT_SHA256SUMS_FILE" .) ]]
           then
