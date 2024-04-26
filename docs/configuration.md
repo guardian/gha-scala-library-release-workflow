@@ -11,16 +11,22 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 ## Repo settings
 
 * Ensure [your GitHub App](github-app.md) has access to your repo. **Guardian developers:** click
-  `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app,
+  `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app -
   so long as you have admin permissions on your repo, you should be able to add your repo to the list
-  of select repositories the app has access to.
-* Disable [branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
-  on any branch the workflow will be pushing to (ie the default branch). Note that PR #26 means that you can use rulesets to protect your default branch, so long as you allow your GitHub App to bypass those restrictions.
-* **Guardian developers:** 
-  * Comply with the repository requirements of
-      [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
-      i.e. ensure the repository has a `production` Topic label
-  * [Re-enable branch protection via rulesets](https://github.com/guardian/recommendations/blob/main/github-rulesets.md).
+  of selected repositories.
+* **Guardian developers:** Comply with the repository requirements of [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
+  i.e. ensure the repository has a `production` Topic label.
+
+### Branch protection
+
+Your [GitHub App](github-app.md) will need to push to directly to your default branch as part of the
+release, bypassing any branch protection. GitHub provides two different methods of branch protection:
+* [Branch protection **rules**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) -
+  there is no mechanism to allow a GitHub App to bypass branch protection **rules**, so you'll
+  need to **remove any rules that apply to the default branch**.
+* [Branch protection **rulesets**](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets) -
+  rulesets _can_ be configured to allow specified GitHub Apps (e.g. _your_ GitHub app) to bypass branch protection -
+  update your rulesets accordingly. **Guardian developers:** see [recommended branch protection rulesets](https://github.com/guardian/recommendations/blob/main/github-rulesets.md).
   
 ## GitHub workflow
 
@@ -121,11 +127,8 @@ or `sonatype.sbt` (`sonatype.sbt` can generally be deleted entirely):
 
 ## Examples
 
-GitHub pull requests on repos updating for  `gha-scala-library-release-workflow`:
-
-* https://github.com/guardian/facia-scala-client/pull/299 _(most recent fully-commented example)_
-* https://github.com/guardian/play-secret-rotation/pull/416
-* https://github.com/guardian/play-googleauth/pull/208
+You can see a long list of example PRs updating repos to use `gha-scala-library-release-workflow`
+[here](https://github.com/guardian/gha-scala-library-release-workflow/issues/20).
 
 See also [_all repos_](https://github.com/search?q=%22guardian%2Fgha-scala-library-release-workflow%22++NOT+is%3Aarchived+NOT+repo%3Aguardian%2Fgha-scala-library-release-workflow+language%3AYAML&type=code&l=YAML) using Scala Library Release Workflow.
 

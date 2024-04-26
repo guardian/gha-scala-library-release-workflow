@@ -6,8 +6,9 @@ making PR comments.
 Each organisation that uses the release workflow will need to create their _own_ GitHub App.
 If `gha-scala-library-release-workflow` had its own server infrastructure, we could probably follow the more
 common model of a single GitHub App being used by many organisations, but instead we take advantage of all those
-free GitHub Actions minutes, so we need to pass the workflow the private key of the GitHub App so that it can
-authenticate as the GitHub App... therefore we must each have our own GitHub App, so that we don't share private keys.
+free GitHub Actions minutes, so we operate as a GitHub Actions workflow, and need to pass the workflow the private
+key of the GitHub App so that it can authenticate as the GitHub App... therefore we must each have our own GitHub App,
+so that we don't share private keys.
 
 ## 1. Create the GitHub App
 
