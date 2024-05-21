@@ -43,6 +43,30 @@ Your repo will require access to [release credentials](credentials/supplying-cre
 [pass on those secrets](https://github.com/guardian/etag-caching/blob/9935da29e76b8b89759bcfe967cc7c1c02aa1814/.github/workflows/release.yml#L11-L13)
 to the workflow.
 
+## Java version
+
+[Example `.tool-versions`](https://github.com/guardian/etag-caching/blob/main/.tool-versions)
+
+Your repository *must* contain an [`asdf`](https://asdf-vm.com/)-formatted `.tool-versions` file
+in the root of the repository, specifying the Java version to be used by the workflow for
+building your project, eg:
+
+```
+java corretto-21.0.3.9.1
+```
+
+Note that although `asdf` requires a fully-specified Java version (eg `21.0.3.9.1` - use
+`asdf list-all java` to list all possible Java versions), currently the workflow will only
+match the *major* version of Java specified in the file (eg `21`), and will _always_ use the
+AWS Corretto distribution of Java. This is due to
+[limitations](https://github.com/actions/setup-java/issues/615) in
+[`actions/setup-java`](https://github.com/actions/setup-java).
+
+As recommended [below](#recommended-sbt-settings), you should also specify a `-release` flag in
+`scalacOptions` to ensure that your library is compiled for any older versions of Java you wish
+to support, even if you're taking advantage of a more recent version of Java for _building_ the
+library.
+
 ## `sbt`
 
 ### Recommended `sbt` plugins
@@ -79,10 +103,11 @@ to the workflow.
     to Maven Central.
   * `scalacOptions` should include `-release:11` (available with Scala [2.13.9](https://www.scala-lang.org/news/2.13.9)
     and above, also known as `-java-output-version`
-    [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)) -
-    the workflow will always use one of the most recent LTS releases of Java
-    [supported by Scala](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html),
-    but the generated class files will be compatible with whichever version of Java you target.
+    [in Scala 3](https://www.scala-lang.org/blog/2022/04/12/scala-3.1.2-released.html#changes-to-other-compatibility-flags)), or whatever minimum version of Java you want to support.
+    The workflow will _build_ your project with whatever Java version you declare in [`.tool-versions`](#java-version) -
+    but while this can be a relatively new version of Java, in order for your compiled code to support
+    _older_ versions of Java, and avoid `UnsupportedClassVersionError` errors, you'll
+    need to set this flag. See also [Scala/Java compatibility](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html).
 * Top-level 'release' module - if your project has a [multi-module](https://www.scala-sbt.org/1.x/docs/Multi-Project.html)
   build this could be called 'root', or, if your project only has one module, it and your
   artifact-producing module could be the same thing, and just use top-level settings.
