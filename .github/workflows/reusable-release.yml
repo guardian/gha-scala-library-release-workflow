@@ -416,9 +416,12 @@ jobs:
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - name: Release
         env:
-          SONATYPE_USERNAME: ${{ inputs.SONATYPE_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          BOOM_USERNAME: ${{ inputs.SONATYPE_USERNAME }}
+          BOOM_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
+          SONATYPE_USERNAME="${BOOM_USERNAME}"
+          SONATYPE_PASSWORD="${BOOM_PASSWORD}"
+          echo "SONATYPE_USERNAME=$SONATYPE_USERNAME"
           sbt "sonatypeBundleRelease"
 
   github-release:
