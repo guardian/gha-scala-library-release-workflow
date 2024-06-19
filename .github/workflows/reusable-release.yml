@@ -22,7 +22,7 @@ on:
         type: string
       SONATYPE_USERNAME:
         description: 'Sonatype username'
-        default: 'guardian.automated.maven.release' # Only for use by the Guardian!
+        default: 'Au73C6hq' # Only for use by the Guardian!
         required: false # Must be supplied if used by a non-Guardian project
         type: string
     secrets:
