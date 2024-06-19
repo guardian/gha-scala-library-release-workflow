@@ -419,8 +419,8 @@ jobs:
           BOOM_USERNAME: ${{ inputs.SONATYPE_USERNAME }}
           BOOM_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
-          SONATYPE_USERNAME="${BOOM_USERNAME}"
-          SONATYPE_PASSWORD="${BOOM_PASSWORD}"
+          export SONATYPE_USERNAME="${BOOM_USERNAME}"
+          export SONATYPE_PASSWORD="${BOOM_PASSWORD}"
           echo "SONATYPE_USERNAME=$SONATYPE_USERNAME"
           sbt "sonatypeBundleRelease"
 
