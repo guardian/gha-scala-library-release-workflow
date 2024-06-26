@@ -17,7 +17,7 @@ so that we don't share private keys.
 You can just click this link to get taken to a pre-filled page to create a new GitHub App - you'll just need to
 customise the app name:
 
-https://github.com/settings/apps/new?name=scala-library-release&url=https://github.com/guardian/gha-scala-library-release-workflow&public=false&contents=write&pull-requests=write&webhook_active=false
+https://github.com/settings/apps/new?name=scala-library-release&url=https://github.com/guardian/gha-scala-library-release-workflow&public=false&contents=write&pull_requests=write&webhook_active=false
 
 ### GitHub App for an organisation account
 
