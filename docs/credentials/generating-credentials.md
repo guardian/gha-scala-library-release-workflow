@@ -39,7 +39,7 @@ gpg --armor --export-secret-key [insert key fingerprint here] | pbcopy
 ## Generating a new GitHub App private key
 
 See [GitHub's instructions](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys) for generating a private key. If you haven't already created a GitHub App for the
-release workflow, see [Setting up the GitHub App](github-app.md) first.
+release workflow, see [Setting up the GitHub App](../github-app.md) first.
 
 **Guardian developers:** Here's a direct link to our GitHub App settings page, where you can generate a new private key:
 https://github.com/organizations/guardian/settings/apps/gu-scala-library-release
