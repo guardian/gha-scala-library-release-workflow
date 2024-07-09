@@ -5,23 +5,19 @@ but if you need to rotate those credentials, or just create some new ones for yo
 
 ## Updating a Sonatype OSSRH Token username & password
 
-As of [January 2024](https://central.sonatype.org/news/20240109_issues_sonatype_org_deprecation/#support-requests),
-Sonatype is actively discouraging the legacy username & password method of authentication, recommending
-[token authentication](https://central.sonatype.org/publish/generate-token/)
-(see link for token-regenerating instructions).
+As of mid-June 2024, the Sonatype release API now _requires_ [token authentication](https://central.sonatype.org/publish/generate-token/), and the old authentication method using the Nexus UI username & password no longer works.
 
 Note these points:
 
-* The token is in a colon:separated username/password format, and _both_ username & password are randomised & revocable
+* The token is in a colon-separated username/password format (eg `u5erNam3:pA55w0rd`), and _both_ username & password are randomised & revocable
   secret strings.
 * Tokens generated on either https://oss.sonatype.org/ or https://s01.oss.sonatype.org/ will be _different_, and
   **a token generated on one will not work on the other**. So, eg, if your `SONATYPE_CREDENTIAL_HOST` is `s01.oss.sonatype.org`,
   you'll need to use a token _generated_ on `s01.oss.sonatype.org`. Remember that the `SONATYPE_CREDENTIAL_HOST` you
   use is [dictated](https://github.com/xerial/sbt-sonatype/pull/461) by which Sonatype OSSRH server your **profile**
   is hosted on.  
-  **Guardian developers:** currently the Guardian's `com.gu` profile is hosted on `oss.sonatype.org`, so the token we
-  use must be generated [there](https://oss.sonatype.org/), logged in with the `guardian.automated.maven.release`
-  account.
+  **Guardian developers:** currently the Guardian's `com.gu` profile is hosted on https://oss.sonatype.org/, so our token
+  use must be generated there, logged in with the `guardian.automated.maven.release` account.
 
 ## Generating a new PGP key
 
