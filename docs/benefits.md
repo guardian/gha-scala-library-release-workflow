@@ -21,5 +21,5 @@ release workflows. They were highly prized in the development of `gha-scala-libr
   Good defaults further reduce sbt configuration 🧹
 * **zero developer onboarding** - no need for a new dev to get Sonatype credentials or PGP keys. If they can write
   to the repo, they can release! 🚀
-* **preview releases** for Pull Requests (https://github.com/guardian/gha-scala-library-release-workflow/pull/19) 👭🏻
+* **preview releases** for Pull Requests (see https://github.com/guardian/gha-scala-library-release-workflow/pull/19) 👭🏻
 * **automatic GitHub Release notes** - always worth having these 📝
