@@ -93,7 +93,7 @@ library.
   `1.4.7` release. The workflow will automatically update the `version` during each release, as appropriate.
 
 [Example `build.sbt`](https://github.com/guardian/etag-caching/blob/main/build.sbt)
-* Artifact-producing modules
+* **Artifact-producing modules** - any module (project or subproject) that creates an artifact for Maven Central
   * `organization` - this dictates the [groupId](https://maven.apache.org/guides/mini/guide-naming-conventions.html) of
     your artifacts, and can be either the same as your Sonatype account profile name (eg `com.gu` for the Guardian),
     or a dot-suffixed version of it (eg `com.gu.foobar`) if your project ('foobar') releases multiple artifacts
@@ -108,13 +108,14 @@ library.
     but while this can be a relatively new version of Java, in order for your compiled code to support
     _older_ versions of Java, and avoid `UnsupportedClassVersionError` errors, you'll
     need to set this flag. See also [Scala/Java compatibility](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html).
-* Top-level 'release' module - if your project has a [multi-module](https://www.scala-sbt.org/1.x/docs/Multi-Project.html)
+* **Non-artifact-producing modules** - any module that _doesn't_ make an artifact to publish to Maven Central
+  (often, the 'root' project in a multi-project build)
+  * `publish / skip := true` (rather than other legacy hacks like `publishArtifact := false`). This setting is
+     respected by `sbt-version-policy` - it won't attempt to calculate compatibility on a module that doesn't
+    publish artifacts.
+* **Top-level 'release' module** - if your project has a [multi-module](https://www.scala-sbt.org/1.x/docs/Multi-Project.html)
   build this could be called 'root', or, if your project only has one module, it and your
   artifact-producing module could be the same thing, and just use top-level settings.
-  * `publish / skip := true` (rather than other legacy hacks like `publishArtifact := false`) for
-    sbt modules that don't generate artifacts (often, the 'root' project in a multi-project build). This
-    setting is respected by `sbt-version-policy` - it won't attempt to calculate compatibility on a module
-    that doesn't publish artifacts.
   * In `releaseProcess`, you'll want _fewer_ steps than
     [the old list specified by `sbt-sonatype`](https://github.com/xerial/sbt-sonatype?tab=readme-ov-file#using-with-sbt-release-plugin),
     now just:
