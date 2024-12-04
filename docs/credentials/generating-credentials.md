@@ -21,16 +21,7 @@ Note these points:
 
 ## Generating a new PGP key
 
-See [Sonatype's instructions](https://central.sonatype.org/publish/requirements/gpg/#generating-a-key-pair) for
-generating a keypair - ensure you upload the public key to a [keyserver](https://keyserver.ubuntu.com/).
-
-However, note that `gha-scala-library-release-workflow` requires a
-[**passphrase-less** private key](https://unix.stackexchange.com/a/550538/46453), and that key
-should be plaintext, not BASE64-encoded.
-
-```shell
-gpg --armor --export-secret-key [insert key fingerprint here] | pbcopy
-```
+See the full docs on [using a new PGP key](pgp-keys.md).
 
 ## Generating a new GitHub App private key
 
