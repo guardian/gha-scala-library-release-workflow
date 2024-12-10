@@ -130,6 +130,7 @@ jobs:
         with:
           distribution: corretto
           java-version: ${{ steps.establish_java_for_library_build.outputs.library_build_major_java_version }}
+      - uses: sbt/setup-sbt@v1.1.4
 #      - name: Debug MIMA assessment
 #        run: |
 #          sbt "show versionPolicyFindIssues"
@@ -268,6 +269,7 @@ jobs:
         with:
           distribution: corretto
           java-version: ${{ needs.generate-version-update-commits.outputs.library_build_major_java_version }}
+      - uses: sbt/setup-sbt@v1.1.4
       - name: Generate artifacts
         run: |
           cat << EndOfFile > sbt-commands.txt
@@ -417,6 +419,7 @@ jobs:
           distribution: corretto
           java-version: 17
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
+      - uses: sbt/setup-sbt@v1.1.4
       - name: Release
         env:
           SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
