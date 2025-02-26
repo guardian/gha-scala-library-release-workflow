@@ -14,7 +14,7 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
   `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app -
   so long as you have admin permissions on your repo, you should be able to add your repo to the list
   of selected repositories.
-* **Guardian developers:** Comply with the repository requirements of [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#how-does-it-work),
+* **Guardian developers:** Comply with the repository requirements of [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#repo-requirements),
   i.e. ensure the repository has a `production` Topic label.
 
 ### Branch protection
