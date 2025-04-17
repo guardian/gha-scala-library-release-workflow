@@ -179,7 +179,7 @@ jobs:
       version_file_post_release_content: ${{ steps.create-commit.outputs.version_file_post_release_content }}
     steps:
       - id: generate-github-app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ inputs.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
@@ -305,7 +305,7 @@ jobs:
       KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
     steps:
       - id: generate-github-app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ inputs.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
@@ -441,7 +441,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - id: generate-github-app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ inputs.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
