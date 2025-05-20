@@ -16,7 +16,7 @@ on:
         required: false # Must be supplied if used by a non-Guardian project
         type: string
       SONATYPE_CREDENTIAL_HOST:
-        description: 'The host of your SONATYPE_PROFILE_NAME, either "oss.sonatype.org" or "s01.oss.sonatype.org"'
+        description: 'The host of your SONATYPE_PROFILE_NAME: either "central.sonatype.com" or one of the legacy "oss.sonatype.org"/"s01.oss.sonatype.org" hosts'
         default: 'oss.sonatype.org' # The default host is going to be whatever "com.gu" is using
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
         type: string
@@ -410,7 +410,7 @@ jobs:
           EndOfFile
           
           mkdir project
-          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.10.0")' > project/plugins.sbt
+          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.12.2")' > project/plugins.sbt
           echo 'sbt.version = 1.9.9' > project/build.properties
           
           ls -lR .
