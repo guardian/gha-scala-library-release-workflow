@@ -69,6 +69,8 @@ library.
 
 ## `sbt`
 
+Minimum `sbt` version: [**1.9.0**](https://github.com/sbt/sbt/releases/tag/v1.9.0)
+
 ### Recommended `sbt` plugins
 
 [Example `project/plugins.sbt`](https://github.com/guardian/etag-caching/blob/main/project/plugins.sbt)
