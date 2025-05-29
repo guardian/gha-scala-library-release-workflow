@@ -10,16 +10,6 @@ on:
         default: '807361' # Only for use by the Guardian!
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
         type: string
-      SONATYPE_PROFILE_NAME:
-        description: 'Sonatype account profile name, eg "com.gu", "org.xerial", etc (not your Sonatype username)'
-        default: 'com.gu' # Only for use by the Guardian!
-        required: false # Must be supplied if used by a non-Guardian project
-        type: string
-      SONATYPE_CREDENTIAL_HOST:
-        description: 'The host of your SONATYPE_PROFILE_NAME: either "central.sonatype.com" or one of the legacy "oss.sonatype.org"/"s01.oss.sonatype.org" hosts'
-        default: 'central.sonatype.com' # The default host is going to be whatever "com.gu" is using
-        required: false # ...but if you're not the Guardian, you'll want to set this explicitly
-        type: string
     secrets:
       SONATYPE_TOKEN:
         description: 'Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/'
@@ -414,32 +404,29 @@ jobs:
           key: signed-${{ env.RUN_ATTEMPT_UID }}
           fail-on-cache-miss: true
       - name: Create tiny sbt project to perform Sonatype upload
+        env:
+          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
           cat << EndOfFile > build.sbt
-          sonatypeBundleDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
-          sonatypeProfileName := "${{ inputs.SONATYPE_PROFILE_NAME }}"
-          sonatypeCredentialHost := "${{ inputs.SONATYPE_CREDENTIAL_HOST }}"
+          Global / stagingDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
           version := "${{ needs.push-release-commit.outputs.release_version }}"
+          sonaDeploymentName := "${{ github.repository }} $GITHUB_REF_NAME ${{ needs.push-release-commit.outputs.release_version }} $RUN_ATTEMPT_UID"
+          credentials += Credentials("Sonatype Central Portal", "central.sonatype.com", userName = "${SONATYPE_TOKEN%%:*}", passwd = "${SONATYPE_TOKEN#*:}")
           EndOfFile
           
           mkdir project
-          echo 'addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.12.2")' > project/plugins.sbt
-          echo 'sbt.version = 1.9.9' > project/build.properties
+          echo 'sbt.version = 1.11.0' > project/build.properties
           
           ls -lR .
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
-          java-version: 17
+          java-version: 21
           cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
       - uses: sbt/setup-sbt@v1.1.8
       - name: Release
-        env:
-          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
         run: |
-          export SONATYPE_USERNAME="${SONATYPE_TOKEN%%:*}" # See https://github.com/xerial/sbt-sonatype/pull/62
-          export SONATYPE_PASSWORD="${SONATYPE_TOKEN#*:}"
-          sbt "sonatypeBundleRelease"
+          sbt "sonaRelease"
 
   github-release:
     name: 🔒 Update GitHub
