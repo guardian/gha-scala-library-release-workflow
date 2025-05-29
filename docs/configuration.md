@@ -80,9 +80,6 @@ Minimum `sbt` version: [**1.9.0**](https://github.com/sbt/sbt/releases/tag/v1.9.
   on your library, as well as automatically setting the [`versionScheme`](https://www.scala-sbt.org/1.x/docs/Publishing.html#Version+scheme)
   of your project to `"early-semver"` (essential).
 * [`sbt-release`](https://github.com/sbt/sbt-release)
-* [`sbt-sonatype`](https://github.com/xerial/sbt-sonatype) - you currently need to have this in your project's
-  `plugins.sbt`, as the [`🎊 Create artifacts`](https://github.com/guardian/gha-scala-library-release-workflow/blob/7d278d4d44e30b4b4c0f6791053bdeb40b8159cb/.github/workflows/reusable-release.yml#L141-L158)
-  job expects it, but in the future, the workflow will probably supply this automatically.
 
 ### Recommended `sbt` settings
 
@@ -135,6 +132,7 @@ Minimum `sbt` version: [**1.9.0**](https://github.com/sbt/sbt/releases/tag/v1.9.
 
 * [`sbt-pgp`](https://github.com/sbt/sbt-pgp) - the workflow [`🔒 Sign`](https://github.com/guardian/gha-scala-library-release-workflow/blob/7d278d4d44e30b4b4c0f6791053bdeb40b8159cb/.github/workflows/reusable-release.yml#L183C11-L206)
   job now handles PGP signing directly with GPG
+* [`sbt-sonatype`](https://github.com/xerial/sbt-sonatype) - this is [no longer needed](https://github.com/guardian/gha-scala-library-release-workflow/pull/62)
 
 ### Unnecessary `sbt` settings
 
