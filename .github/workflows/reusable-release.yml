@@ -172,6 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.create-commit.outputs.release_tag }}
+      release_notes_url: ${{ steps.create-commit.outputs.release_notes_url }}
       release_version: ${{ steps.create-commit.outputs.release_version }}
       release_commit_id: ${{ steps.create-commit.outputs.release_commit_id }}
       version_file_path: ${{ steps.create-commit.outputs.version_file_path }}
@@ -216,6 +217,14 @@ jobs:
           git fetch unsigned
           
           RELEASE_VERSION=${RELEASE_TAG#"v"}
+          
+          if [[ "${{ needs.init.outputs.release_type }}" = "FULL_MAIN_BRANCH" ]]; then
+            RELEASE_NOTES_URL=$GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+          else
+            # Use the PR url as the release notes url when doing a 'preview' release
+            RELEASE_NOTES_URL=$( gh pr view $GITHUB_REF_NAME --json url -q .url )
+          fi
+          
           VERSION_FILE_PATH=$(git diff-tree --no-commit-id --name-only -r $RELEASE_TAG | grep version.sbt)
           VERSION_FILE_INITIAL_SHA=$( git rev-parse $GITHUB_REF:$VERSION_FILE_PATH )
           VERSION_FILE_RELEASE_SHA=$( git rev-parse $RELEASE_TAG:$VERSION_FILE_PATH )
@@ -233,7 +242,7 @@ jobs:
           Release-Version: $RELEASE_VERSION
           Release-Initiated-By: ${{ github.server_url }}/${{github.actor}}
           Release-Workflow-Run: $GITHUB_REPO_URL/actions/runs/${{ github.run_id }}
-          GitHub-Release-Notes: $GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+          Release-Notes: $RELEASE_NOTES_URL
           EndOfFile
 
           # Create temporary branch to push the release commit- required for PREVIEW releases
@@ -247,6 +256,7 @@ jobs:
                     
           cat << EndOfFile >> $GITHUB_OUTPUT
           release_tag=$RELEASE_TAG
+          release_notes_url=$RELEASE_NOTES_URL
           release_version=$RELEASE_VERSION
           release_commit_id=$release_commit_id
           version_file_path=$VERSION_FILE_PATH
@@ -275,6 +285,7 @@ jobs:
           cat << EndOfFile > sbt-commands.txt
           set every sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("$GITHUB_REPOSITORY_OWNER", "${GITHUB_REPOSITORY#*/}", "${{ needs.init.outputs.key_email }}"))
           set ThisBuild / publishTo := Some(Resolver.file("foobar", file("$LOCAL_ARTIFACTS_STAGING_PATH")))
+          set ThisBuild / releaseNotesURL := Some(url("${{ needs.push-release-commit.outputs.release_notes_url }}"))
           EndOfFile
           cat sbt-commands.txt
           
@@ -438,6 +449,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
       RELEASE_VERSION: ${{ needs.push-release-commit.outputs.release_version }}
+      RELEASE_NOTES_URL: ${{ needs.push-release-commit.outputs.release_notes_url }}
       GH_REPO: ${{ github.repository }}
     steps:
       - id: generate-github-app-token
@@ -467,12 +479,12 @@ jobs:
           GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
         run: |
           gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
-          echo "GitHub Release notes: [$RELEASE_TAG]($GITHUB_REPO_URL/releases/tag/$RELEASE_TAG)" >> $GITHUB_STEP_SUMMARY
+          echo "GitHub Release notes: [$RELEASE_TAG]($RELEASE_NOTES_URL)" >> $GITHUB_STEP_SUMMARY
           
           cat << EndOfFile > commit-message.txt
           Post-release of $RELEASE_TAG by @${{github.actor}}: set snapshot version
           
-          Setting snapshot version after @${{github.actor}} published $GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+          Setting snapshot version after @${{github.actor}} published $RELEASE_NOTES_URL
           EndOfFile
           
           gh api --method PUT /repos/:owner/:repo/contents/${{ needs.push-release-commit.outputs.version_file_path }} \
