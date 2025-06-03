@@ -283,7 +283,9 @@ jobs:
       - name: Generate artifacts
         run: |
           cat << EndOfFile > sbt-commands.txt
-          set every sonatypeProjectHosting := Some(xerial.sbt.Sonatype.GitHubHosting("$GITHUB_REPOSITORY_OWNER", "${GITHUB_REPOSITORY#*/}", "${{ needs.init.outputs.key_email }}"))
+          set ThisBuild / homepage := Some(url("$GITHUB_REPO_URL"))
+          set ThisBuild / scmInfo  := Some(ScmInfo(url("$GITHUB_REPO_URL"), "$GITHUB_REPO_URL"))
+          set ThisBuild / developers := List(Developer("$GITHUB_REPOSITORY_OWNER", "$GITHUB_REPOSITORY_OWNER", "${{ needs.init.outputs.key_email }}", url("${{ github.server_url }}/$GITHUB_REPOSITORY_OWNER")))
           set ThisBuild / publishTo := Some(Resolver.file("foobar", file("$LOCAL_ARTIFACTS_STAGING_PATH")))
           set ThisBuild / releaseNotesURL := Some(url("${{ needs.push-release-commit.outputs.release_notes_url }}"))
           EndOfFile
