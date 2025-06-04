@@ -415,7 +415,7 @@ jobs:
           EndOfFile
           
           mkdir project
-          echo 'sbt.version = 1.11.0' > project/build.properties
+          echo 'sbt.version = 1.11.1' > project/build.properties
           
           ls -lR .
       - uses: actions/setup-java@v4
