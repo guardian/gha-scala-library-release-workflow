@@ -49,3 +49,19 @@ workflow make automatic compatibility-based checks, and derive the new version n
 
 The `gha-scala-library-release-workflow` automatically creates a GitHub Release, with automatically-generated release
 notes, as part of the release process, so a GitHub Release is still created with each release.
+
+### Troubleshooting
+
+If the release fails after it's tagged the repo, or it's a new artifact, subsequent releases will search for that non existent version in
+maven central when trying to do the compatibility check.
+
+If it's due to a failed release:
+1. delete the Release and Tag from the github UI,
+1. revert the edit to the version.sbt.
+1. run the release action again
+
+If it's a new artifact e.g. first scala 3 version:
+1. update the version.sbt manually to be a suitable SNAPSHOT version (usually a major version)
+1. comment out the version check in the build.sbt
+1. run the release action again
+1. add the version check back in to the build.sbt
