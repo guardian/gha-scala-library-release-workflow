@@ -426,6 +426,9 @@ jobs:
       - uses: sbt/setup-sbt@v1.1.9
       - name: Release
         run: |
+          sbt "show sonaBundle"
+          ls -la /home/runner/work/etag-caching/etag-caching/target/sona-bundle/bundle.zip
+          unzip -l /home/runner/work/etag-caching/etag-caching/target/sona-bundle/bundle.zip
           sbt "sonaRelease"
 
   github-release:
