@@ -1,0 +1,123 @@
+name: '🔒 Sign'
+description: 'Sign artifacts with PGP key'
+inputs:
+  release-type:
+    description: "Either 'FULL_MAIN_BRANCH' or 'PREVIEW_FEATURE_BRANCH'"
+    required: true
+  release-tag:
+    description: "Eg 'v1.2.4' - with the 'v' prefix"
+    required: true
+  release-commit-id:
+    description: "The git commit-id SHA for the actual release commit"
+    required: true
+  pgp-key-fingerprint:
+    description: 'PGP key fingerprint'
+    required: true
+  pgp-key-email:
+    description: 'Email address used when git-authoring the signed tag - must match PGP key'
+    required: true
+  pgp-private-key:
+    description: "A passphrase-less PGP private key used to sign artifacts, commits, & tags.
+          Should be in normal plaintext (ASCII-armored) format, starting 'BEGIN PGP PUBLIC KEY BLOCK', with no additional BASE64-encoding."
+    required: true
+  github-app-id:
+    description:
+      "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
+      https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
+    required: true
+  github-app-private-key:
+    description:
+      "See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys
+      Should be in normal plaintext format, starting '-----BEGIN RSA PRIVATE KEY-----'"
+    required: true
+  artifact-sha256sums:
+    description: 'Output from hashdeep - SHA-256 hashes for all artifact files (.jar, pom, etc)'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - id: generate-github-app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.github-app-id }}
+        private-key: ${{ inputs.github-app-private-key }} }
+    - uses: actions/checkout@v4
+      with:
+        path: repo
+        ref: ${{ inputs.release-commit-id }}
+        fetch-depth: 1 # For tag-signing, we only need the release commit - branch operations done with GitHub API
+        token: ${{ steps.generate-github-app-token.outputs.token }}
+        persist-credentials: true # Allow us to push as the GitHub App, and bypass branch ruleset
+
+    - uses: actions/download-artifact@v4
+      with:
+        path: /tmp/artifact_staging
+        name: unsigned-artifacts
+    - name: Verify artifact hashes before signing
+      shell: bash
+      run: |
+        sudo apt-get install hashdeep -q > /dev/null
+        ARTIFACT_SHA256SUMS_FILE=$( mktemp )
+        printf "${{inputs.artifact-sha256sums}}" > $ARTIFACT_SHA256SUMS_FILE
+        
+        cd /tmp/artifact_staging
+        echo "Checking artifact hashes..."
+        if [[ $(sha256deep -r -l -X "$ARTIFACT_SHA256SUMS_FILE" .) ]]
+        then
+          echo "::error title=Artifact hash verification failed::Artifacts for signing don't match the hash values recorded when they were generated."
+          exit 1
+        fi
+    - uses: actions/setup-java@v4
+      with:
+        distribution: corretto
+        java-version: 21
+        gpg-private-key: ${{ inputs.pgp-private-key }}
+    - name: Sign artifacts
+      shell: bash
+      run: |
+        echo "KEY_FINGERPRINT=${{inputs.pgp-key-fingerprint}}"
+        find /tmp/artifact_staging -type f -exec gpg -a --local-user "${{inputs.pgp-key-fingerprint}}" --detach-sign {} \;
+    - name: "Full Main-Branch release: Add release commit (from temporary release branch) to default branch"
+      if: inputs.release-type == 'FULL_MAIN_BRANCH'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+        GH_REPO: ${{ github.repository }}
+        RELEASE_COMMIT_ID: ${{ inputs.release-commit-id }}
+      run: |
+        if gh api --silent --method PATCH /repos/:owner/:repo/git/refs/heads/$GITHUB_REF_NAME -f "sha=${{inputs.release-commit-id}}"; then
+          echo "...fast-forward of default branch to include release commit succeeded"
+        else
+          echo "...fast-forward failed (commits added to default branch while release running?), will attempt a merge instead"
+          gh api --silent --method POST /repos/:owner/:repo/merges -f "base=$GITHUB_REF_NAME" -f "head=${{inputs.release-commit-id}}"
+        fi
+    - name: Push signed tag
+      shell: bash
+      env:
+        COMMITTER_NAME: "@${{github.actor}} using gha-scala-library-release-workflow"
+      run: |
+        cd $GITHUB_WORKSPACE/repo
+        git config user.email "${{inputs.pgp-key-email}}"
+        git config user.name "$COMMITTER_NAME"
+        git config tag.gpgSign true
+        git config user.signingkey "${{inputs.pgp-key-fingerprint}}"
+        
+        cat << EndOfFile > tag-message.txt
+        Release ${{inputs.release-tag}} initiated by $COMMITTER_NAME
+        
+        ${{inputs.artifact-sha256sums}}
+        EndOfFile
+        
+        echo "Message is..."
+        cat tag-message.txt
+        
+        echo "Creating release tag (including artifact hashes)"
+        git tag -a -F tag-message.txt ${{inputs.release-tag}} ${{inputs.release-commit-id}}
+        
+        echo "Pushing tag ${{inputs.release-tag}}"
+        git push origin ${{inputs.release-tag}}
+    - uses: actions/upload-artifact@v4
+      with:
+        path: /tmp/artifact_staging
+        name: signed-artifacts

@@ -1,0 +1,66 @@
+name: 🔒 Init
+description: Establish initial values for this release - eg, is this a Preview release?
+inputs:
+  pgp-private-key:
+    description: 'A passwordless PGP key'
+    required: true
+outputs:
+  pgp-key-fingerprint:
+    description: "PGP key fingerprint so we can sign artifacts using the correct key later on"
+    value: ${{ steps.read-identifiers.outputs.pgp-key-fingerprint }}
+  pgp-key-email:
+    description: "Email address, derived from signing PGP key"
+    value: ${{ steps.read-identifiers.outputs.pgp-key-email }}
+  release-type:
+    description: "Either 'FULL_MAIN_BRANCH' or 'PREVIEW_FEATURE_BRANCH'"
+    value: ${{ steps.generate-version-suffix.outputs.release-type }}
+  version-suffix:
+    description: "If this is a preview release, a uniquely-identifying suffix"
+    value: ${{ steps.generate-version-suffix.outputs.version-suffix }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        distribution: corretto
+        java-version: 21
+        gpg-private-key: ${{ inputs.pgp-private-key }}
+    - name: Read Identifiers from Signing Key
+      id: read-identifiers
+      shell: bash
+      run: |
+        key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
+        key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
+        key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
+        echo "key_fingerprint=$key_fingerprint"
+        
+        cat << EndOfFile >> $GITHUB_OUTPUT
+        pgp-key-fingerprint=$key_fingerprint
+        pgp-key-email=$key_email
+        EndOfFile
+        if ! [[ "$key_fingerprint" =~ ^[[:xdigit:]]{8,}$ ]]; then
+          echo "::error title=Missing PGP key::Has PGP_PRIVATE_KEY been set correctly? https://github.com/guardian/gha-scala-library-release-workflow/blob/main/docs/credentials/supplying-credentials.md"
+          exit 1
+        fi
+    - name: Check for default branch
+      id: generate-version-suffix
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        default_branch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name ${{ github.repository }})
+        
+        if [[ "$default_branch" = $GITHUB_REF_NAME ]]; then
+          release_type="FULL_MAIN_BRANCH"
+          version_suffix=""
+        else
+          release_type="PREVIEW_FEATURE_BRANCH"
+          version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:]-]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
+        fi
+        
+        echo "current branch: $GITHUB_REF_NAME, release_type: $release_type, version_suffix: $version_suffix"
+        cat << EndOfFile >> $GITHUB_OUTPUT
+        release-type=$release_type
+        version-suffix=$version_suffix
+        EndOfFile

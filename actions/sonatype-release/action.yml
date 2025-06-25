@@ -1,0 +1,43 @@
+name: '🔒 Sonatype Release'
+description: 'Upload artifact bundle to Sonatype Central Portal'
+inputs:
+  release-version:
+    description: "The artifact version being released, eg '1.2.4' - without a prefix"
+    required: true
+  sonatype-token:
+    description: 'Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/download-artifact@v4
+      with:
+        path: /tmp/artifact_staging
+        name: signed-artifacts
+    - name: Create tiny sbt project to perform Sonatype upload
+      shell: bash
+      env:
+        SONATYPE_TOKEN: ${{ inputs.sonatype-token }}
+      run: |
+        cat << EndOfFile > build.sbt
+        Global / stagingDirectory := new File("/tmp/artifact_staging")
+        version := "${{ inputs.release-version }}"
+        sonaDeploymentName := "${{ github.repository }} $GITHUB_REF_NAME ${{ inputs.release-version }} ${{ github.run_id }}-${{ github.run_attempt }}"
+        credentials += Credentials("Sonatype Central Portal", "central.sonatype.com", userName = "${SONATYPE_TOKEN%%:*}", passwd = "${SONATYPE_TOKEN#*:}")
+        EndOfFile
+        
+        mkdir project
+        echo 'sbt.version = 1.11.1' > project/build.properties
+        
+        ls -lR .
+    - uses: actions/setup-java@v4
+      with:
+        distribution: corretto
+        java-version: 21
+        cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
+    - uses: sbt/setup-sbt@v1.1.9
+    - name: Release
+      shell: bash
+      run: |
+        sbt "sonaRelease"
