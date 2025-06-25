@@ -303,6 +303,9 @@ jobs:
   sign:
     name: 🔒 Sign
     needs: [init, push-release-commit, create-artifacts]
+    permissions:
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
     env:
       KEY_FINGERPRINT: ${{ needs.init.outputs.key_fingerprint }}
@@ -339,6 +342,9 @@ jobs:
             echo "::error title=Artifact hash verification failed::Artifacts for signing don't match the hash values recorded when they were generated."
             exit 1
           fi
+      - uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: '${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}/**/*.jar'
       - uses: actions/setup-java@v4
         with:
           distribution: corretto
