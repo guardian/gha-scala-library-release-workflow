@@ -1,10 +1,9 @@
-name: '🔒 Init'
-description: 'Get all initial required info for the release execution'
+name: '🔒 Sonatype Release'
+description: 'Upload artifact bundle to Sonatype Central Portal'
 inputs:
   gpg-private-key:  # id of input
     description: 'A passwordless PGP key'
     required: true
-
 outputs:
   key_fingerprint:
     description: "PGP key fingerprint so we can sign artifacts using the correct key later on"
