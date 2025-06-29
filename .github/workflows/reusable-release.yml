@@ -45,51 +45,19 @@ jobs:
     name: 🔒 Init
     runs-on: ubuntu-latest
     outputs:
-      key_fingerprint: ${{ steps.read-identifiers.outputs.key_fingerprint }}
-      key_email: ${{ steps.read-identifiers.outputs.key_email }}
-      release_type: ${{ steps.generate-version-suffix.outputs.release_type }}
-      version_suffix: ${{ steps.generate-version-suffix.outputs.version_suffix }}
+      key_fingerprint: ${{ steps.init.outputs.key_fingerprint }}
+      key_email: ${{ steps.init.outputs.key_email }}
+      release_type: ${{ steps.init.outputs.release_type }}
+      version_suffix: ${{ steps.init.outputs.version_suffix }}
     steps:
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
         with:
-          distribution: corretto
-          java-version: 17
+          repository: guardian/gha-scala-library-release-workflow # TODO - adapt for forks
+          ref: break-workflow-up-into-smaller-reusable-files
+      - id: init
+        uses: ./.github/actions/init
+        with:
           gpg-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
-      - name: Read Identifiers from Signing Key
-        id: read-identifiers
-        run: |
-          key_fingerprint_and_email=$(gpg2 --list-secret-keys --list-options show-only-fpr-mbox)
-          key_fingerprint=$(echo $key_fingerprint_and_email | awk '{print $1}')
-          key_email=$(echo $key_fingerprint_and_email | awk '{print $2}')
-          echo "key_fingerprint=$key_fingerprint"
-          
-          cat << EndOfFile >> $GITHUB_OUTPUT
-          key_fingerprint=$key_fingerprint
-          key_email=$key_email
-          EndOfFile
-          if ! [[ "$key_fingerprint" =~ ^[[:xdigit:]]{8,}$ ]]; then
-            echo "::error title=Missing PGP key::Has PGP_PRIVATE_KEY been set correctly? https://github.com/guardian/gha-scala-library-release-workflow/blob/main/docs/credentials/supplying-credentials.md"
-            exit 1
-          fi
-      - name: Check for default branch
-        id: generate-version-suffix
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          default_branch=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name ${{ github.repository }})
-   
-          if [[ "$default_branch" = $GITHUB_REF_NAME ]]; then
-            release_type="FULL_MAIN_BRANCH"
-            version_suffix=""
-          else
-            release_type="PREVIEW_FEATURE_BRANCH"
-            version_suffix="-PREVIEW.${GITHUB_REF_NAME//[^[:alnum:]-]/}.$(date +%Y-%m-%dT%H%M).${GITHUB_SHA:0:8}"
-          fi
-          echo "current branch: $GITHUB_REF_NAME, release_type: $release_type, version_suffix: $version_suffix"
-          cat << EndOfFile >> $GITHUB_OUTPUT
-          release_type=$release_type
-          version_suffix=$version_suffix
-          EndOfFile
 
   generate-version-update-commits:
     name: 🎊 Test & Version
@@ -398,35 +366,15 @@ jobs:
     needs: [push-release-commit, sign]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache/restore@v4
+      - uses: actions/checkout@v4
         with:
-          path: ${{ env.LOCAL_ARTIFACTS_STAGING_PATH }}
-          key: signed-${{ env.RUN_ATTEMPT_UID }}
-          fail-on-cache-miss: true
-      - name: Create tiny sbt project to perform Sonatype upload
-        env:
-          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
-        run: |
-          cat << EndOfFile > build.sbt
-          Global / stagingDirectory := new File("$LOCAL_ARTIFACTS_STAGING_PATH")
-          version := "${{ needs.push-release-commit.outputs.release_version }}"
-          sonaDeploymentName := "${{ github.repository }} $GITHUB_REF_NAME ${{ needs.push-release-commit.outputs.release_version }} $RUN_ATTEMPT_UID"
-          credentials += Credentials("Sonatype Central Portal", "central.sonatype.com", userName = "${SONATYPE_TOKEN%%:*}", passwd = "${SONATYPE_TOKEN#*:}")
-          EndOfFile
-          
-          mkdir project
-          echo 'sbt.version = 1.11.1' > project/build.properties
-          
-          ls -lR .
-      - uses: actions/setup-java@v4
+          repository: guardian/gha-scala-library-release-workflow # TODO - adapt for forks
+          ref: break-workflow-up-into-smaller-reusable-files
+      - uses: ./.github/actions/sonatype-release
         with:
-          distribution: corretto
-          java-version: 21
-          cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
-      - uses: sbt/setup-sbt@v1.1.9
-      - name: Release
-        run: |
-          sbt "sonaRelease"
+          release-version: ${{ needs.push-release-commit.outputs.release_version }}
+          sonatype-token: ${{ secrets.SONATYPE_TOKEN }}
+          run-attempt-uid: ${{ env.RUN_ATTEMPT_UID }}
 
   github-release:
     name: 🔒 Update GitHub
@@ -435,80 +383,19 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    env:
-      RELEASE_TAG: ${{ needs.push-release-commit.outputs.release_tag }}
-      RELEASE_VERSION: ${{ needs.push-release-commit.outputs.release_version }}
-      RELEASE_NOTES_URL: ${{ needs.push-release-commit.outputs.release_notes_url }}
-      GH_REPO: ${{ github.repository }}
     steps:
-      - id: generate-github-app-token
-        uses: actions/create-github-app-token@v2
+      - uses: actions/checkout@v4
         with:
-          app-id: ${{ inputs.GITHUB_APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
-      - name: Clean-up temporary branch that was retaining the now-tagged release commit
-        env:
-          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
-        run: |
-          gh api --method DELETE /repos/:owner/:repo/git/refs/heads/$TEMPORARY_BRANCH
-      - name: Common values
-        run: |
-          GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
-          GITHUB_WORKFLOW_FILE="release.yml" # Could be derived from $GITHUB_WORKFLOW_REF
-          GITHUB_WORKFLOW_URL="$GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE"
-          
-          cat << EndOfFile >> $GITHUB_ENV
-          GITHUB_WORKFLOW_FILE=$GITHUB_WORKFLOW_FILE
-          GITHUB_WORKFLOW_LINK=[GitHub UI]($GITHUB_WORKFLOW_URL)
-          GITHUB_WORKFLOW_RUN_LINK=[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})
-          EndOfFile
-      - name: Create Github Release and update version.sbt post-release
-        if: needs.init.outputs.release_type == 'FULL_MAIN_BRANCH'
-        env:
-          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
-        run: |
-          gh release create $RELEASE_TAG --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
-          echo "GitHub Release notes: [$RELEASE_TAG]($RELEASE_NOTES_URL)" >> $GITHUB_STEP_SUMMARY
-          
-          cat << EndOfFile > commit-message.txt
-          Post-release of $RELEASE_TAG by @${{github.actor}}: set snapshot version
-          
-          Setting snapshot version after @${{github.actor}} published $RELEASE_NOTES_URL
-          EndOfFile
-          
-          gh api --method PUT /repos/:owner/:repo/contents/${{ needs.push-release-commit.outputs.version_file_path }} \
-            --field message="@commit-message.txt" \
-            --field sha="${{ needs.push-release-commit.outputs.version_file_release_sha }}" \
-            --field content="${{ needs.push-release-commit.outputs.version_file_post_release_content }}"
-      - name: Update PR with comment
-        if: needs.init.outputs.release_type == 'PREVIEW_FEATURE_BRANCH'
-        env:
-          GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
-        run: |
-          cat << EndOfFile > comment_body.txt
-          @${{github.actor}} has published a preview version of this PR with release workflow run $GITHUB_WORKFLOW_RUN_LINK, based on commit ${{ github.sha }}:
-          
-          $RELEASE_VERSION
-          
-          <details>
-          <summary>Want to make another preview release?</summary>
-          
-          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
-          
-          gh workflow run $GITHUB_WORKFLOW_FILE --ref $GITHUB_REF_NAME
-          
-          </details>
-          
-          <details>
-          <summary>Want to make a full release after this PR is merged?</summary>
-          
-          Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
-          
-          gh workflow run $GITHUB_WORKFLOW_FILE
-          
-          </details>
-          EndOfFile
-          
-          cat comment_body.txt
-          
-          gh pr comment ${{ github.ref_name }} --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
+          repository: guardian/gha-scala-library-release-workflow # TODO - adapt for forks
+          ref: break-workflow-up-into-smaller-reusable-files
+      - uses: ./.github/actions/update-github
+        with:
+          release-type: ${{ needs.init.outputs.release_type }}
+          release-tag: ${{ needs.push-release-commit.outputs.release_tag }}
+          release-version: ${{ needs.push-release-commit.outputs.release_version }}
+          release-notes-url: ${{ needs.push-release-commit.outputs.release_notes_url }}
+          github-app-id: ${{ inputs.GITHUB_APP_ID }}
+          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+          version-file-path: ${{ needs.push-release-commit.outputs.version_file_path }}
+          version_file_post_release_content: ${{ needs.push-release-commit.outputs.version_file_post_release_content }}
+          version_file_release_sha: ${{ needs.push-release-commit.outputs.version_file_release_sha }}

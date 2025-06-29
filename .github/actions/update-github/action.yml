@@ -1,0 +1,113 @@
+name: '🔒 Update GitHub'
+description: 'Update GitHub with details post-release'
+inputs:
+  release-type:
+    description: "Either 'FULL_MAIN_BRANCH' or 'PREVIEW_FEATURE_BRANCH'"
+    required: true
+  release-tag:
+    description: "Eg 'v1.2.4' - with the 'v' prefix"
+    required: true
+  release-version:
+    description: "Eg '1.2.4' - without a prefix"
+    required: true
+  release-notes-url:
+    description: "Either a GitHub Release url ('https://github.com/guardian/etag-caching/releases/tag/v8.1.6') or s PR url for a Preview release ('https://github.com/guardian/etag-caching/pull/65')"
+    required: true
+  github-app-id:
+    description:
+      "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
+      https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
+    required: true
+  github-app-private-key:
+    description:
+      "See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys
+      Should be in normal plaintext format, starting '-----BEGIN RSA PRIVATE KEY-----'"
+    required: true
+  version-file-path:
+    description: "eg version.sbt"
+    required: true
+  version_file_release_sha:
+    description: "the SHA of the version.sbt file when it has the non-snapshot release version in it"
+    required: true
+  version_file_post_release_content:
+    description: "the contents of the version.sbt file after the release"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - id: generate-github-app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.github-app-id }}
+        private-key: ${{ inputs.github-app-private-key }} }
+    - name: Clean-up temporary branch that was retaining the now-tagged release commit
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+      run: |
+        gh api --method DELETE /repos/:owner/:repo/git/refs/heads/$TEMPORARY_BRANCH
+    - name: Common values
+      shell: bash
+      run: |
+        GITHUB_ACTIONS_PATH="$GITHUB_REPO_URL/actions"
+        GITHUB_WORKFLOW_FILE="release.yml" # Could be derived from $GITHUB_WORKFLOW_REF
+        GITHUB_WORKFLOW_URL="$GITHUB_ACTIONS_PATH/workflows/$GITHUB_WORKFLOW_FILE"
+        
+        cat << EndOfFile >> $GITHUB_ENV
+        GITHUB_WORKFLOW_FILE=$GITHUB_WORKFLOW_FILE
+        GITHUB_WORKFLOW_LINK=[GitHub UI]($GITHUB_WORKFLOW_URL)
+        GITHUB_WORKFLOW_RUN_LINK=[#${{ github.run_number }}]($GITHUB_ACTIONS_PATH/runs/${{ github.run_id }})
+        EndOfFile
+    - name: Create Github Release and update version.sbt post-release
+      if: inputs.release_type == 'FULL_MAIN_BRANCH'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+      run: |
+        gh release create ${{inputs.release_tag}} --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
+        echo "GitHub Release notes: [${{inputs.release_tag}}](${{inputs.release-notes-url}})" >> $GITHUB_STEP_SUMMARY
+        
+        cat << EndOfFile > commit-message.txt
+        Post-release of ${{inputs.release_tag}} by @${{github.actor}}: set snapshot version
+        
+        Setting snapshot version after @${{github.actor}} published ${{inputs.release-notes-url}}
+        EndOfFile
+        
+        gh api --method PUT /repos/:owner/:repo/contents/${{ inputs.version_file_path }} \
+          --field message="@commit-message.txt" \
+          --field sha="${{ inputs.version_file_release_sha }}" \
+          --field content="${{ inputs.version_file_post_release_content }}"
+    - name: Update PR with comment
+      if: inputs.release_type == 'PREVIEW_FEATURE_BRANCH'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+      run: |
+        cat << EndOfFile > comment_body.txt
+        @${{github.actor}} has published a preview version of this PR with release workflow run $GITHUB_WORKFLOW_RUN_LINK, based on commit ${{ github.sha }}:
+        
+        ${{ inputs.release-version }}
+        
+        <details>
+        <summary>Want to make another preview release?</summary>
+        
+        Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, specifying the $GITHUB_REF_NAME branch, or use the [GitHub CLI](https://cli.github.com/) command:
+        
+        gh workflow run $GITHUB_WORKFLOW_FILE --ref $GITHUB_REF_NAME
+        
+        </details>
+        
+        <details>
+        <summary>Want to make a full release after this PR is merged?</summary>
+        
+        Click 'Run workflow' in the $GITHUB_WORKFLOW_LINK, leaving the branch as the default, or use the [GitHub CLI](https://cli.github.com/) command:
+        
+        gh workflow run $GITHUB_WORKFLOW_FILE
+        
+        </details>
+        EndOfFile
+        
+        cat comment_body.txt
+        
+        gh pr comment ${{ github.ref_name }} --body-file comment_body.txt >> $GITHUB_STEP_SUMMARY
