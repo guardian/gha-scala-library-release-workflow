@@ -83,10 +83,11 @@ jobs:
       temporary-branch: ${{ steps.act.outputs.temporary-branch }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@main
+        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@fix-release-type-input-on-push-release-commit
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+          release-type: ${{ needs.init.outputs.release-type }}
 
   create-artifacts:
     name: 🎊 Create artifacts
@@ -143,7 +144,7 @@ jobs:
           release-type: ${{ needs.init.outputs.release-type }}
           release-tag: ${{ needs.push-release-commit.outputs.release-tag }}
           release-version: ${{ needs.push-release-commit.outputs.release-version }}
-          release-notes-url: ${{ needs.push-release-commit.outputs.release-notes_url }}
+          release-notes-url: ${{ needs.push-release-commit.outputs.release-notes-url }}
           temporary-branch: ${{ needs.push-release-commit.outputs.temporary-branch }}
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
