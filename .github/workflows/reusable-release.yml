@@ -73,6 +73,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     outputs:
+      release-type: ${{ needs.init.outputs.release-type }}
       release-tag: ${{ steps.act.outputs.release-tag }}
       release-notes-url: ${{ steps.act.outputs.release-notes-url }}
       release-version: ${{ steps.act.outputs.release-version }}
