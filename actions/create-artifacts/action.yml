@@ -1,0 +1,66 @@
+name: '🎊 Create artifacts'
+description: "Create an unsigned file tree artifact suitable for uploading to Sonatype Central Portal - top-level folder will be 'com' for 'com.gu' group id"
+inputs:
+  release-commit-id:
+    description: "The git commit-id SHA for the actual release commit"
+    required: true
+  release-notes-url:
+    description: "Either a GitHub Release url ('https://github.com/guardian/etag-caching/releases/tag/v8.1.6') or the PR url for a Preview release ('https://github.com/guardian/etag-caching/pull/65')"
+    required: true
+  library-build-major-java-version:
+    description: "The major version of Java (eg '21', '17', or '11') the library should be built with"
+    required: true
+  owner-email:
+    description: "Email address for the owner of this project (eg. derived from signing PGP key)"
+    required: true
+
+outputs:
+  artifact-sha256sums:
+    description: "Output from hashdeep - SHA-256 hashes for all artifact files (.jar, pom, etc)"
+    value: ${{ steps.record-hashes.outputs.artifact-sha256sums }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.release-commit-id }}
+    - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is resolved
+      with:
+        distribution: corretto
+        java-version: ${{ inputs.library-build-major-java-version }}
+    - uses: sbt/setup-sbt@v1.1.9
+    - name: Generate artifacts
+      shell: bash
+      env:
+        GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      run: |
+        cat << EndOfFile > sbt-commands.txt
+        set ThisBuild / homepage := Some(url("$GITHUB_REPO_URL"))
+        set ThisBuild / scmInfo  := Some(ScmInfo(url("$GITHUB_REPO_URL"), "$GITHUB_REPO_URL"))
+        set ThisBuild / developers := List(Developer("$GITHUB_REPOSITORY_OWNER", "$GITHUB_REPOSITORY_OWNER", "${{ inputs.owner-email }}", url("${{ github.server_url }}/$GITHUB_REPOSITORY_OWNER")))
+        set ThisBuild / publishTo := Some(Resolver.file("foobar", file("/tmp/artifact_staging")))
+        set ThisBuild / releaseNotesURL := Some(url("${{ inputs.release-notes-url }}"))
+        EndOfFile
+        cat sbt-commands.txt
+        
+        sbt ";< sbt-commands.txt; +publish"
+    - name: Record SHA-256 hashes of artifacts
+      id: record-hashes
+      shell: bash
+      run: |
+        sudo apt-get install hashdeep -q > /dev/null
+        
+        cd /tmp/artifact_staging
+        {
+          echo 'artifact-sha256sums<<EOF'
+          sha256deep -r -l .
+          echo EOF
+        } >> "$GITHUB_OUTPUT"
+
+    - uses: actions/upload-artifact@v4
+      with:
+        path: /tmp/artifact_staging
+        name: unsigned-artifacts
+        retention-days: 1 # we'll have an additional copy of these files in 'signed-artifacts'
+

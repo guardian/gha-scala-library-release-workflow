@@ -1,0 +1,127 @@
+name: '🔒 Push Release Commit'
+description: 'Push the release commit to a temporary branch'
+inputs:
+  github-app-id:
+    description:
+      "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
+      https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
+    required: true
+  github-app-private-key:
+    description:
+      "See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys
+      Should be in normal plaintext format, starting '-----BEGIN RSA PRIVATE KEY-----'"
+    required: true
+outputs:
+  release-tag:
+    description: "Eg 'v1.2.4' - with the 'v' prefix"
+    value: ${{ steps.create-commit.outputs.release-tag }}
+  release-version:
+    description: "The artifact version being released, eg '1.2.4' - without a prefix"
+    value: ${{ steps.create-commit.outputs.release-version }}
+  release-commit-id:
+    description: "The git commit-id SHA for the actual release commit"
+    value: ${{ steps.create-commit.outputs.release-commit-id }}
+  release-notes-url:
+    description: "Either a GitHub Release url ('https://github.com/guardian/etag-caching/releases/tag/v8.1.6') or the PR url for a Preview release ('https://github.com/guardian/etag-caching/pull/65')"
+    value: ${{ steps.create-commit.outputs.release-notes-url }}
+  version-file-path:
+    description: "eg. version.sbt"
+    value: ${{ steps.create-commit.outputs.version-file-path }}
+  version-file-release-sha:
+    description: "the SHA of the version.sbt file when it has the non-snapshot release version in it"
+    value: ${{ steps.create-commit.outputs.version-file-release-sha }}
+  version-file-post-release-content:
+    description: "the contents of the version.sbt file after the release - with the '-SNAPSHOT' suffix reinstated"
+    value: ${{ steps.create-commit.outputs.version-file-post-release-content }}
+  temporary-branch:
+    description: "The temporary branch that the release commit was pushed to"
+    value: ${{ steps.create-commit.outputs.temporary-branch }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: generate-github-app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.github-app-id }}
+        private-key: ${{ inputs.github-app-private-key }} }
+    - uses: actions/checkout@v4
+      with:
+        path: repo
+    - uses: actions/download-artifact@v4
+      with:
+        name: unverified-version-updates
+    - name: Create commit
+      id: create-commit
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+        GH_REPO: ${{ github.repository }}
+        GITHUB_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      run: |
+        echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
+        echo "GITHUB_REF=$GITHUB_REF"
+        
+        tar -xvf unverified-version-updates.git.tar
+        cd unverified-version-updates.git
+        
+        RELEASE_TAG=$(git describe --tags --abbrev=0)
+        
+        echo "Retrieved RELEASE_TAG=$RELEASE_TAG"
+        
+        cd ../repo
+        
+        git remote add unsigned ../unverified-version-updates.git
+        git fetch unsigned
+        
+        RELEASE_VERSION=${RELEASE_TAG#"v"}
+        
+        echo "RELEASE_VERSION=$RELEASE_VERSION"
+        
+        if [[ "${{ inputs.release-type }}" = "FULL_MAIN_BRANCH" ]]; then
+          RELEASE_NOTES_URL=$GITHUB_REPO_URL/releases/tag/$RELEASE_TAG
+        else
+          # Use the PR url as the release notes url when doing a 'preview' release
+          RELEASE_NOTES_URL=$( gh pr view $GITHUB_REF_NAME --json url -q .url )
+        fi
+        
+        VERSION_FILE_PATH=$(git diff-tree --no-commit-id --name-only -r $RELEASE_TAG | grep version.sbt)
+        VERSION_FILE_INITIAL_SHA=$( git rev-parse $GITHUB_REF:$VERSION_FILE_PATH )
+        VERSION_FILE_RELEASE_SHA=$( git rev-parse $RELEASE_TAG:$VERSION_FILE_PATH )
+        VERSION_FILE_RELEASE_CONTENT=$( git cat-file blob $RELEASE_TAG:$VERSION_FILE_PATH | base64 -w0)
+        VERSION_FILE_POST_RELEASE_CONTENT=$( git cat-file blob unsigned/$GITHUB_REF_NAME:$VERSION_FILE_PATH | base64 -w0)
+
+        cd ..
+        
+        cat << EndOfFile > commit-message.txt
+        $RELEASE_TAG published by ${{github.actor}}
+        
+        ${{github.actor}} published release version $RELEASE_VERSION
+        using gha-scala-library-release-workflow: https://github.com/guardian/gha-scala-library-release-workflow
+
+        Release-Version: $RELEASE_VERSION
+        Release-Initiated-By: ${{ github.server_url }}/${{github.actor}}
+        Release-Workflow-Run: $GITHUB_REPO_URL/actions/runs/${{ github.run_id }}
+        Release-Notes: $RELEASE_NOTES_URL
+        EndOfFile
+
+        # Create temporary branch to push the release commit
+        TEMPORARY_BRANCH=release-workflow/temporary/${{ github.run_id }}
+        gh api --method POST /repos/:owner/:repo/git/refs -f ref="refs/heads/$TEMPORARY_BRANCH" -f sha="$GITHUB_SHA"
+
+        release_commit_id=$(gh api --method PUT /repos/:owner/:repo/contents/$VERSION_FILE_PATH \
+          --field branch="$TEMPORARY_BRANCH" \
+          --field message="@commit-message.txt" \
+          --field sha="$VERSION_FILE_INITIAL_SHA" \
+          --field content="$VERSION_FILE_RELEASE_CONTENT" --jq '.commit.sha')
+        
+        cat << EndOfFile >> $GITHUB_OUTPUT
+        release-tag=$RELEASE_TAG
+        release-notes-url=$RELEASE_NOTES_URL
+        release-version=$RELEASE_VERSION
+        release-commit-id=$release_commit_id
+        temporary-branch=$TEMPORARY_BRANCH
+        version-file-path=$VERSION_FILE_PATH
+        version-file-release-sha=$VERSION_FILE_RELEASE_SHA
+        version-file-post-release-content=$VERSION_FILE_POST_RELEASE_CONTENT
+        EndOfFile

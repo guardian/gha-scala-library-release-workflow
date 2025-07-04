@@ -1,0 +1,71 @@
+name: '🎊 Versioning'
+description: 'Use automated-compatibility-checking to establish the appropriate version number'
+inputs:
+  version-suffix:
+    description: "If this is a preview release, a uniquely-identifying suffix. Otherwise, empty."
+    required: true
+outputs:
+  library-build-major-java-version:
+    description: "The major version of Java (eg '21', '17', or '11') the library should be built with"
+    value: ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - id: establish_java_for_library_build
+      name: Establish library build Java version
+      shell: bash
+      run: |
+        if [ ! -f .tool-versions ]; then
+        echo "::error title=Missing .tool-versions file::gha-scala-library-release-workflow requires an asdf-format .tool-versions file to establish the Java version for the build."
+        exit 1
+        fi
+        LIBRARY_BUILD_MAJOR_JAVA_VERSION=$( grep -Eo 'java [[:alnum:]-]+-[[:digit:]]+' .tool-versions | rev | cut -d'-' -f1 | rev )
+        echo "Using Java $LIBRARY_BUILD_MAJOR_JAVA_VERSION"
+        if [ -z "${LIBRARY_BUILD_MAJOR_JAVA_VERSION}" ]; then
+        echo "::error title=Missing Java version in .tool-versions file::Could not establish the library's required Java version - the '.tool-versions' file should have a line like 'java corretto-21.0.3.9.1'."
+        exit 1
+        fi
+        
+        cat << EndOfFile >> $GITHUB_OUTPUT
+        library-build-major-java-version=$LIBRARY_BUILD_MAJOR_JAVA_VERSION
+        EndOfFile
+    - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
+      with:
+        distribution: corretto
+        java-version: ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}
+    - uses: sbt/setup-sbt@v1.1.9
+    - name: Use sbt-release to construct version.sbt updates
+      shell: bash
+      run: |
+        git config user.email "example@example.com"
+        git config user.name "Ephemeral commit created only for extracting version commit information"
+        
+        sbt_commands_file=$(mktemp)
+        cat << EndOfFile > $sbt_commands_file
+        set releaseVersion := releaseVersion.value.andThen(_ + "${{ inputs.version-suffix }}")
+        release with-defaults
+        EndOfFile
+        cat $sbt_commands_file
+        sbt ";< $sbt_commands_file"
+        
+        echo $GITHUB_WORKSPACE
+        cd `mktemp -d`
+        git clone --bare $GITHUB_WORKSPACE unverified-version-updates.git
+        tar -cvf unverified-version-updates.git.tar unverified-version-updates.git
+        
+        cat << EndOfFile >> $GITHUB_ENV
+        BARE_REPO_PATH=$(pwd)/unverified-version-updates.git.tar
+        EndOfFile
+        
+        
+        cd unverified-version-updates.git
+        cat << EndOfFile >> $GITHUB_STEP_SUMMARY
+        # Release $(git describe --tags --abbrev=0)
+        Library built with Java ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}.
+        EndOfFile
+    - uses: actions/upload-artifact@v4
+      with:
+        path: ${{ env.BARE_REPO_PATH }}
+        name: unverified-version-updates
