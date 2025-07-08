@@ -1,6 +1,9 @@
 name: '🔒 Push Release Commit'
 description: 'Push the release commit to a temporary branch'
 inputs:
+  release-type:
+    description: "Either 'FULL_MAIN_BRANCH' or 'PREVIEW_FEATURE_BRANCH'"
+    required: true
   github-app-id:
     description:
       "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
@@ -84,6 +87,8 @@ runs:
           # Use the PR url as the release notes url when doing a 'preview' release
           RELEASE_NOTES_URL=$( gh pr view $GITHUB_REF_NAME --json url -q .url )
         fi
+        
+        echo "RELEASE_NOTES_URL=$RELEASE_NOTES_URL"
         
         VERSION_FILE_PATH=$(git diff-tree --no-commit-id --name-only -r $RELEASE_TAG | grep version.sbt)
         VERSION_FILE_INITIAL_SHA=$( git rev-parse $GITHUB_REF:$VERSION_FILE_PATH )
