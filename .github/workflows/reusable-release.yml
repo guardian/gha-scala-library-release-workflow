@@ -56,7 +56,7 @@ jobs:
       library-build-major-java-version: ${{ steps.act.outputs.library-build-major-java-version }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/versioning@main
+        uses: guardian/gha-scala-library-release-workflow/actions/versioning@example-pr-where-modified-internal-actions-are-called-with-the-correct-branch
         with:
           version-suffix: ${{ needs.init.outputs.version-suffix }}
 
@@ -109,7 +109,7 @@ jobs:
     needs: [init, push-release-commit, create-artifacts]
     runs-on: ubuntu-latest
     steps:
-      - uses: guardian/gha-scala-library-release-workflow/actions/sign@main
+      - uses: guardian/gha-scala-library-release-workflow/actions/sign@example-pr-where-modified-internal-actions-are-called-with-the-correct-branch
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
