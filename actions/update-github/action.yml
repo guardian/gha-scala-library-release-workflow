@@ -35,6 +35,10 @@ inputs:
   version-file-post-release-content:
     description: "the contents of the version.sbt file after the release - with the '-SNAPSHOT' suffix reinstated"
     required: true
+  commit-snapshot-version:
+    description: "If true, the action will commit the post-release version file with a message indicating that it is a snapshot version"
+    required: false
+    default: 'true
 
 runs:
   using: "composite"
@@ -70,16 +74,18 @@ runs:
         gh release create ${{inputs.release-tag}} --verify-tag --generate-notes --notes "Release run: $GITHUB_WORKFLOW_RUN_LINK"
         echo "GitHub Release notes: [${{inputs.release-tag}}](${{inputs.release-notes-url}})" >> $GITHUB_STEP_SUMMARY
         
-        cat << EndOfFile > commit-message.txt
-        Post-release of ${{inputs.release-tag}} by @${{github.actor}}: set snapshot version
+        if [[ "${{ inputs.commit-snapshot-version }}" = "true" ]]; then
+          cat << EndOfFile > commit-message.txt
+          Post-release of ${{inputs.release-tag}} by @${{github.actor}}: set snapshot version
+          
+          Setting snapshot version after @${{github.actor}} published ${{inputs.release-notes-url}}
+          EndOfFile
         
-        Setting snapshot version after @${{github.actor}} published ${{inputs.release-notes-url}}
-        EndOfFile
-        
-        gh api --method PUT /repos/:owner/:repo/contents/${{ inputs.version-file-path }} \
+          gh api --method PUT /repos/:owner/:repo/contents/${{ inputs.version-file-path }} \
           --field message="@commit-message.txt" \
           --field sha="${{ inputs.version-file-release-sha }}" \
           --field content="${{ inputs.version-file-post-release-content }}"
+        fi
     - name: Update PR with comment
       if: inputs.release-type == 'PREVIEW_FEATURE_BRANCH'
       shell: bash
