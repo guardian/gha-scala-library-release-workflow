@@ -44,7 +44,7 @@ jobs:
       version-suffix: ${{ steps.act.outputs.version-suffix }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/init@main
+        uses: guardian/gha-scala-library-release-workflow/actions/init@example-pr-where-modified-internal-actions-are-called-with-the-correct-branch
         with:
           pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
 
@@ -109,7 +109,7 @@ jobs:
     needs: [init, push-release-commit, create-artifacts]
     runs-on: ubuntu-latest
     steps:
-      - uses: guardian/gha-scala-library-release-workflow/actions/sign@main
+      - uses: guardian/gha-scala-library-release-workflow/actions/sign@example-pr-where-modified-internal-actions-are-called-with-the-correct-branch
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
