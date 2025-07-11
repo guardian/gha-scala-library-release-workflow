@@ -38,7 +38,7 @@ inputs:
   commit-snapshot-version:
     description: "If true, the action will commit the post-release version file with a message indicating that it is a snapshot version"
     required: false
-    default: 'true
+    default: 'true'
 
 runs:
   using: "composite"
