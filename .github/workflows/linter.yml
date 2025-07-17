@@ -1,0 +1,70 @@
+name: Lint
+on:
+  workflow_dispatch:
+  pull_request:
+
+  # triggering CI default branch improves caching
+  # see https://docs.github.com/en/free-pro-team@latest/actions/guides/caching-dependencies-to-speed-up-workflows#restrictions-for-accessing-a-cache
+  push:
+    branches:
+      - main
+
+jobs:
+  internal-action-branch-check:
+    name: Branch check for calls to the workflow's internal GitHub Actions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for calls to the workflow's internal GitHub Actions incorrectly using a different branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd `mktemp -d`
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            export short_ref="${{ github.event.pull_request.head.ref }}"
+          else
+            export short_ref="${{ github.ref_name }}"
+          fi
+          workflow_file=".github/workflows/reusable-release.yml"
+
+          echo "short_ref=$short_ref"
+          yq '[.jobs.*.steps[]
+              | select(has("uses"))
+              | .uses
+              | {"call": capture("gha-scala-library-release-workflow/actions/(?P<action>.*)@(?P<ref>.*)"), "line": line}
+              | select(.call.ref != strenv(short_ref))
+              | [.call.action, .call.ref, .line] ]' -o csv $GITHUB_WORKSPACE/$workflow_file | grep . > differing-action-refs.csv
+          
+          printf "\n* Calls to GitHub Actions where the ref is not our current branch...\n"
+          cat differing-action-refs.csv
+          
+          # If we're the default branch, everything should be the default branch.
+          # If we're PR, refs to altered actions must match the branch.
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            gh pr diff $short_ref --name-only | grep "^actions/" | cut -d'/' -f2 | sort | uniq > modified-actions.txt
+          
+            printf "\n* Actions modified by this PR:\n"
+            cat modified-actions.txt
+            
+            touch errors.csv
+            while read -r MODIFIED_ACTION; do
+              grep "^$MODIFIED_ACTION," differing-action-refs.csv >> errors.csv || true
+            done < modified-actions.txt
+          else
+            cp differing-action-refs.csv errors.csv
+          fi
+          
+          printf "\n* Gathered errors:\n"
+          cat errors.csv
+          
+          while IFS=',' read -r action ref line; do
+            echo "::error file=$workflow_file,line=$line,title=Mismatched call (using branch '$ref') to internal GitHub Action '$action'::On the '$short_ref' branch, calls to the workflow's internal GitHub Action '$action' should use '$short_ref', not '$ref'"
+          done < errors.csv
+
+          if [ -s "errors.csv" ]; then
+            echo "❌ The workflow is referring to internal actions on a different branch." >&2
+            exit 1
+          fi

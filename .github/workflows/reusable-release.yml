@@ -83,7 +83,7 @@ jobs:
       temporary-branch: ${{ steps.act.outputs.temporary-branch }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@fix-release-type-input-on-push-release-commit
+        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@main
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
