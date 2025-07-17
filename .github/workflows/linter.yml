@@ -28,6 +28,14 @@ jobs:
             export short_ref="${{ github.ref_name }}"
           fi
           workflow_file=".github/workflows/reusable-release.yml"
+          
+          absolute_path_to_workflow_file=$GITHUB_WORKSPACE/$workflow_file
+          
+          echo "absolute_path_to_workflow_file=$absolute_path_to_workflow_file"
+          if [ ! -f $absolute_path_to_workflow_file ]; then
+            echo "❌ Workflow file not found!" >&2
+            exit 1
+          fi
 
           echo "short_ref=$short_ref"
           yq '[.jobs.*.steps[]
@@ -35,7 +43,7 @@ jobs:
               | .uses
               | {"call": capture("gha-scala-library-release-workflow/actions/(?P<action>.*)@(?P<ref>.*)"), "line": line}
               | select(.call.ref != strenv(short_ref))
-              | [.call.action, .call.ref, .line] ]' -o csv $GITHUB_WORKSPACE/$workflow_file | grep . > differing-action-refs.csv
+              | [.call.action, .call.ref, .line] ]' -o csv $absolute_path_to_workflow_file | grep . > differing-action-refs.csv
           
           printf "\n* Calls to GitHub Actions where the ref is not our current branch...\n"
           cat differing-action-refs.csv
