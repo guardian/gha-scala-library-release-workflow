@@ -43,7 +43,7 @@ jobs:
               | .uses
               | {"call": capture("gha-scala-library-release-workflow/actions/(?P<action>.*)@(?P<ref>.*)"), "line": line}
               | select(.call.ref != strenv(short_ref))
-              | [.call.action, .call.ref, .line] ]' -o csv $absolute_path_to_workflow_file | grep . > differing-action-refs.csv
+              | [.call.action, .call.ref, .line] ]' -o csv $absolute_path_to_workflow_file | grep . > differing-action-refs.csv || true
           
           printf "\n* Calls to GitHub Actions where the ref is not our current branch...\n"
           cat differing-action-refs.csv
