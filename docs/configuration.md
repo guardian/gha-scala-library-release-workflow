@@ -121,12 +121,13 @@ Minimum `sbt` version: [**1.9.0**](https://github.com/sbt/sbt/releases/tag/v1.9.
     `checkSnapshotDependencies, inquireVersions, runClean, runTest, setReleaseVersion, commitReleaseVersion, tagRelease, setNextVersion, commitNextVersion`
     _([if your tests require special privileges](https://github.com/guardian/facia-scala-client/pull/299/files#r1425649126)
     you may need to drop `runTest`)_
-  * `releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value` - to activate the
-      automatic compatibility-based version-numbering provided by the `sbt-version-policy` plugin. This means your `version`
-      can go up by more than just an `x.x.PATCH` increment in a release, if
-      [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy)
-      say that it should. You'll need `import sbtversionpolicy.withsbtrelease.ReleaseVersion` at the top of your  `build.sbt`
-      to access this method.
+  * **Enable automated compatibility-based versioning** by updating the `releaseVersion` setting. The correct version
+    bump will be calculated by the `sbt-version-policy` plugin - your `version` can go up by more than just an
+    `x.x.PATCH` increment in a release, if [Scala semver rules](https://www.scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html#early-semver-and-sbt-version-policy) say that it should. You'll need to
+    `import sbtversionpolicy.withsbtrelease.ReleaseVersion` at the top of your `build.sbt`, and then use **one** of the
+    following two methods, depending on whether your project is multi-module or not:
+    * **Multi-module** : `releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value`
+    * **Single-module** : `releaseVersion := ReleaseVersion.fromAssessedCompatibilityWithLatestRelease().value`
 
 ### Unnecessary `sbt` plugins
 
