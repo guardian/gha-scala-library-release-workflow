@@ -71,7 +71,7 @@ runs:
     - uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: 21
+        java-version: 23
         gpg-private-key: ${{ inputs.pgp-private-key }}
     - name: Sign artifacts
       shell: bash
