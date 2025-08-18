@@ -14,7 +14,7 @@ jobs:
     name: Branch check for calls to the workflow's internal GitHub Actions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check for calls to the workflow's internal GitHub Actions incorrectly using a different branch
         env:
           GH_TOKEN: ${{ github.token }}
