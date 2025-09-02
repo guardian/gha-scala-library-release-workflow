@@ -24,7 +24,7 @@ runs:
     - uses: actions/setup-java@v4
       with:
         distribution: corretto
-        java-version: 21
+        java-version: 22
         gpg-private-key: ${{ inputs.pgp-private-key }}
     - name: Read Identifiers from Signing Key
       id: read-identifiers
