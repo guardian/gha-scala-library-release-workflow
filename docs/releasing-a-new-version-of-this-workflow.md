@@ -23,7 +23,7 @@ This guide is for releasing a new version of the gha-scala-library-release-workf
 4. Update the major version tag to point to the new minor version:
 
   ```sh
-  git tag -f v2 v2.0.4 && git push origin v2 -f
+  git tag -f v2 v2.0.4 && git push -f origin v2
   ```
 
 5. [Draft a new release](https://github.com/guardian/gha-scala-library-release-workflow/releases/new) in the github UI
