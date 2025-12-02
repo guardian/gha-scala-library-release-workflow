@@ -10,10 +10,11 @@ The release workflow needs a `release.yml` GitHub workflow in your repo, and spe
 
 ## Repo settings
 
-* Ensure [your GitHub App](github-app.md) has access to your repo. **Guardian developers:** click
-  `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app -
-  so long as you have admin permissions on your repo, you should be able to add your repo to the list
-  of selected repositories.
+* Ensure [your GitHub App](github-app.md) has access to your repo. **Guardian developers:** Get an org-owner to click
+  `Configure` on the [gu-scala-library-release](https://github.com/apps/gu-scala-library-release) app and grant access to the repo -
+  usually just having admin permissions on the repo would be enough to reliably add your repo to the list
+  of selected repositories, but as of December 2025, we've found that if a user does not have org-owner rights,
+  add repositories can actually unintentionally _remove_ repos.
 * **Guardian developers:** Comply with the repository requirements of [`guardian/github-secret-access`](https://github.com/guardian/github-secret-access?tab=readme-ov-file#repo-requirements),
   i.e. ensure the repository has a `production` Topic label.
 
