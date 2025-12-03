@@ -44,8 +44,10 @@ jobs:
       version-suffix: ${{ steps.act.outputs.version-suffix }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/init@main
+        uses: guardian/gha-scala-library-release-workflow/actions/init@search-for-repos-github-app-can-not-access
         with:
+          github-app-id: ${{ inputs.GITHUB_APP_ID }}
+          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
           pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
 
   versioning:
