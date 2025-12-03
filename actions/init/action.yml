@@ -4,6 +4,16 @@ inputs:
   pgp-private-key:
     description: 'A passwordless PGP key'
     required: true
+  github-app-id:
+    description:
+      "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
+      https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
+    required: true
+  github-app-private-key:
+    description:
+      "See https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/managing-private-keys-for-github-apps#generating-private-keys
+      Should be in normal plaintext format, starting '-----BEGIN RSA PRIVATE KEY-----'"
+    required: true
 outputs:
   pgp-key-fingerprint:
     description: "PGP key fingerprint so we can sign artifacts using the correct key later on"
@@ -21,6 +31,30 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - id: generate-github-app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.github-app-id }}
+        private-key: ${{ inputs.github-app-private-key }} }
+        owner: ${{ github.repository_owner }}
+    - name: Search for repos GitHub app can not access
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-github-app-token.outputs.token }}
+      run: |
+        echo "Installations..."
+        
+        gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /installation/repositories?per_page=100 | jq ".repositories[].full_name" | sort
+
+        echo "Search..."
+
+        gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/search/code?per_page=60&q=gha-scala-library-release-workflow/.github/workflows/reusable-release.yml+language:yaml+user:${{ github.repository_owner }}" | jq ".items[].repository.full_name" | sort
     - uses: actions/setup-java@v4
       with:
         distribution: corretto
