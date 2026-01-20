@@ -29,7 +29,7 @@ runs:
       with:
         distribution: corretto
         java-version: ${{ inputs.library-build-major-java-version }}
-    - uses: sbt/setup-sbt@v1.1.9
+    - uses: sbt/setup-sbt@v1.1.15
     - name: Generate artifacts
       shell: bash
       env:
