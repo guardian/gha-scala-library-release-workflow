@@ -117,7 +117,7 @@ runs:
         
         echo "Pushing tag ${{inputs.release-tag}}"
         git push origin ${{inputs.release-tag}}
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         path: /tmp/artifact_staging
         name: signed-artifacts

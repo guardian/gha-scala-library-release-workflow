@@ -65,7 +65,7 @@ runs:
         # Release $(git describe --tags --abbrev=0)
         Library built with Java ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}.
         EndOfFile
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         path: ${{ env.BARE_REPO_PATH }}
         name: unverified-version-updates
