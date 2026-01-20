@@ -58,7 +58,7 @@ runs:
           echo EOF
         } >> "$GITHUB_OUTPUT"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         path: /tmp/artifact_staging
         name: unsigned-artifacts
