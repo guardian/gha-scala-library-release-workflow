@@ -68,7 +68,7 @@ runs:
           echo "::error title=Artifact hash verification failed::Artifacts for signing don't match the hash values recorded when they were generated."
           exit 1
         fi
-    - uses: actions/setup-java@v4
+    - uses: actions/setup-java@v5
       with:
         distribution: corretto
         java-version: 21

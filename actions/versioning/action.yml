@@ -31,7 +31,7 @@ runs:
         cat << EndOfFile >> $GITHUB_OUTPUT
         library-build-major-java-version=$LIBRARY_BUILD_MAJOR_JAVA_VERSION
         EndOfFile
-    - uses: actions/setup-java@v4 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
+    - uses: actions/setup-java@v5 # don't 'cache: sbt', at least until https://github.com/actions/setup-java/pull/564 is merged
       with:
         distribution: corretto
         java-version: ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}
