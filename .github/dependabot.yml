@@ -7,9 +7,11 @@ updates:
     schedule:
       interval: 'weekly'
     groups:
-      actions/setup-java: { patterns: ["actions/setup-java"] }
       actions/checkout: { patterns: ["actions/checkout"] }
+      actions/setup-java: { patterns: [ "actions/setup-java" ] }
       actions/upload-artifact: { patterns: [ "actions/upload-artifact" ] }
+      actions/download-artifact: { patterns: [ "actions/download-artifact" ] }
+      actions/create-github-app-token: { patterns: [ "actions/create-github-app-token" ] }
       sbt/setup-sbt: { patterns: ["sbt/setup-sbt"] }
     cooldown:
       default-days: 7
