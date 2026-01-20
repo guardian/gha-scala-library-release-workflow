@@ -7,9 +7,9 @@ updates:
     schedule:
       interval: 'weekly'
     groups:
-      setup-java:
-        patterns:
-          - "actions/setup-java"
-      checkout:
-        patterns:
-          - "actions/checkout"
+      actions/setup-java: { patterns: ["actions/setup-java"] }
+      actions/checkout: { patterns: ["actions/checkout"] }
+      actions/upload-artifact: { patterns: [ "actions/upload-artifact" ] }
+      sbt/setup-sbt: { patterns: ["sbt/setup-sbt"] }
+    cooldown:
+      default-days: 7
