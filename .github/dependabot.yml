@@ -6,3 +6,10 @@ updates:
       - "/actions/*"
     schedule:
       interval: 'weekly'
+    groups:
+      setup-java:
+        patterns:
+          - "actions/setup-java"
+      checkout:
+        patterns:
+          - "actions/checkout"
