@@ -44,7 +44,7 @@ runs:
       uses: actions/create-github-app-token@v3
       with:
         app-id: ${{ inputs.github-app-id }}
-        private-key: ${{ inputs.github-app-private-key }} }
+        private-key: ${{ inputs.github-app-private-key }}
     - name: Add common values to the GITHUB_ENV - note all subsequent steps have access to the GitHub token with GH_TOKEN
       shell: bash
       run: |

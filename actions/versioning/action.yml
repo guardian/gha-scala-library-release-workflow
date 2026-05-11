@@ -1,9 +1,13 @@
-name: '🎊 Versioning'
-description: 'Use automated-compatibility-checking to establish the appropriate version number'
+name: "🎊 Versioning"
+description: "Use automated-compatibility-checking to establish the appropriate version number"
 inputs:
   version-suffix:
     description: "If this is a preview release, a uniquely-identifying suffix. Otherwise, empty."
     required: true
+  working-directory:
+    description: "The directory containing the sbt project, relative to the root of the repository. Defaults to the repository root."
+    default: "."
+    required: false
 outputs:
   library-build-major-java-version:
     description: "The major version of Java (eg '21', '17', or '11') the library should be built with"
@@ -27,7 +31,7 @@ runs:
         echo "::error title=Missing Java version in .tool-versions file::Could not establish the library's required Java version - the '.tool-versions' file should have a line like 'java corretto-21.0.3.9.1'."
         exit 1
         fi
-        
+
         cat << EndOfFile >> $GITHUB_OUTPUT
         library-build-major-java-version=$LIBRARY_BUILD_MAJOR_JAVA_VERSION
         EndOfFile
@@ -37,11 +41,12 @@ runs:
         java-version: ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}
     - uses: sbt/setup-sbt@508b753e53cb6095967669e0911487d2b9bc9f41 # v1.1.22
     - name: Use sbt-release to construct version.sbt updates
+      working-directory: ${{ inputs.working-directory }}
       shell: bash
       run: |
         git config user.email "example@example.com"
         git config user.name "Ephemeral commit created only for extracting version commit information"
-        
+
         sbt_commands_file=$(mktemp)
         cat << EndOfFile > $sbt_commands_file
         set releaseVersion := releaseVersion.value.andThen(_ + "${{ inputs.version-suffix }}")
@@ -49,17 +54,17 @@ runs:
         EndOfFile
         cat $sbt_commands_file
         sbt ";< $sbt_commands_file"
-        
+
         echo $GITHUB_WORKSPACE
         cd `mktemp -d`
         git clone --bare $GITHUB_WORKSPACE unverified-version-updates.git
         tar -cvf unverified-version-updates.git.tar unverified-version-updates.git
-        
+
         cat << EndOfFile >> $GITHUB_ENV
         BARE_REPO_PATH=$(pwd)/unverified-version-updates.git.tar
         EndOfFile
-        
-        
+
+
         cd unverified-version-updates.git
         cat << EndOfFile >> $GITHUB_STEP_SUMMARY
         # Release $(git describe --tags --abbrev=0)

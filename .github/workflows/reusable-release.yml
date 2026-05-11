@@ -7,12 +7,19 @@ on:
         description:
           "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
           https://github.com/organizations/guardian/settings/apps/gu-scala-library-release"
-        default: '807361' # Only for use by the Guardian!
+        default: "807361" # Only for use by the Guardian!
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
+        type: string
+      WORKING_DIRECTORY:
+        description:
+          "The directory containing the sbt project, relative to the root of the repository.
+          Defaults to the repository root."
+        default: "."
+        required: false
         type: string
     secrets:
       SONATYPE_TOKEN:
-        description: 'Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/'
+        description: "Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/"
         required: true
       PGP_PRIVATE_KEY:
         description:
@@ -56,9 +63,10 @@ jobs:
       library-build-major-java-version: ${{ steps.act.outputs.library-build-major-java-version }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/versioning@main
+        uses: guardian/gha-scala-library-release-workflow/actions/versioning@support-non-root-directory
         with:
           version-suffix: ${{ needs.init.outputs.version-suffix }}
+          working-directory: ${{ inputs.WORKING_DIRECTORY }}
 
   push-release-commit:
     name: 🔒 Push Release Commit
@@ -83,10 +91,10 @@ jobs:
       temporary-branch: ${{ steps.act.outputs.temporary-branch }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@main
+        uses: guardian/gha-scala-library-release-workflow/actions/push-release-commit@support-non-root-directory
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
-          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           release-type: ${{ needs.init.outputs.release-type }}
 
   create-artifacts:
@@ -97,12 +105,13 @@ jobs:
       artifact-sha256sums: ${{ steps.act.outputs.artifact-sha256sums }}
     steps:
       - id: act
-        uses: guardian/gha-scala-library-release-workflow/actions/create-artifacts@main
+        uses: guardian/gha-scala-library-release-workflow/actions/create-artifacts@support-non-root-directory
         with:
           release-commit-id: ${{ needs.push-release-commit.outputs.release-commit-id }}
           release-notes-url: ${{ needs.push-release-commit.outputs.release-notes-url }}
           library-build-major-java-version: ${{ needs.versioning.outputs.library-build-major-java-version }}
           owner-email: ${{ needs.init.outputs.pgp-key-email }}
+          working-directory: ${{ inputs.WORKING_DIRECTORY }}
 
   sign:
     name: 🔒 Sign
@@ -112,7 +121,7 @@ jobs:
       - uses: guardian/gha-scala-library-release-workflow/actions/sign@main
         with:
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
-          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           pgp-key-email: ${{ needs.init.outputs.pgp-key-email }}
           pgp-key-fingerprint: ${{ needs.init.outputs.pgp-key-fingerprint }}
           pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
@@ -133,7 +142,7 @@ jobs:
 
   update-github:
     name: 🔒 Update GitHub
-    needs:  [init, push-release-commit, sign]
+    needs: [init, push-release-commit, sign]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -147,7 +156,7 @@ jobs:
           release-notes-url: ${{ needs.push-release-commit.outputs.release-notes-url }}
           temporary-branch: ${{ needs.push-release-commit.outputs.temporary-branch }}
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
-          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
+          github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
           version-file-path: ${{ needs.push-release-commit.outputs.version-file-path }}
           version-file-post-release-content: ${{ needs.push-release-commit.outputs.version-file-post-release-content }}
           version-file-release-sha: ${{ needs.push-release-commit.outputs.version-file-release-sha }}
