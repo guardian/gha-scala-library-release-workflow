@@ -44,7 +44,7 @@ runs:
   using: "composite"
   steps:
     - id: generate-github-app-token
-      uses: actions/create-github-app-token@v3
+      uses: actions/create-github-app-token@v3.1.1
       with:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }} }
