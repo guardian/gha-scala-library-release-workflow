@@ -48,7 +48,7 @@ runs:
       with:
         app-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }} }
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v6.0.2
       with:
         path: repo
     - uses: actions/download-artifact@v8

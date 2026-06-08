@@ -12,7 +12,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v6.0.2
     - id: establish_java_for_library_build
       name: Establish library build Java version
       shell: bash
