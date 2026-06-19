@@ -56,7 +56,7 @@ If the release fails after it's tagged the repo, or it's a new artifact, subsequ
 maven central when trying to do the compatibility check.
 
 If it's due to a failed release or a new artifact e.g. first scala 3 version:
-1. update the version.sbt manually to be a suitable SNAPSHOT version (usually a major version)
-1. comment out the version check in the build.sbt
-1. run the release action again
-1. add the version check back in to the build.sbt
+1. Update the `version.sbt` manually to be a suitable SNAPSHOT version (usually a major version).
+1. Comment out or delete the `releaseVersion` key that's derived from a version compatibility check in the `build.sbt` file. It will likely look something like this: `releaseVersion := ReleaseVersion.fromAggregatedAssessedCompatibilityWithLatestRelease().value`. Some [examples](https://github.com/guardian/gha-scala-library-release-workflow/issues/33).
+1. Run the release action again.
+1. Add the `releaseVersion` key back in to the `build.sbt` file, possibly just by reverting the PR created in step 2.
