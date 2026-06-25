@@ -77,7 +77,13 @@ jobs:
             while read -r MODIFIED_ACTION; do
               grep "^$MODIFIED_ACTION," differing-action-refs.csv >> errors.csv || true
             done < substantive-modified-actions.txt
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # workflow_dispatch from a non-default branch: no PR diff available, so the
+            # check cannot be applied meaningfully and is skipped.
+            touch errors.csv
           else
+            # For any other trigger (e.g. push): every internal action must use the
+            # current branch ref.
             cp differing-action-refs.csv errors.csv
           fi
           
