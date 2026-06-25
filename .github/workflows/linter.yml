@@ -52,23 +52,31 @@ jobs:
           # If we're PR, refs to altered actions must match the branch.
           
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # Dependabot PRs bump external action versions across many action.yml files
-            # mechanically. There is no new logic to exercise via the PR branch, so the
-            # branch-ref check does not apply to them.
-            if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
-              echo "Skipping branch-ref check for Dependabot PR."
-              exit 0
-            fi
-
             gh pr diff $short_ref --name-only | grep "^actions/" | cut -d'/' -f2 | sort | uniq > modified-actions.txt
           
             printf "\n* Actions modified by this PR:\n"
             cat modified-actions.txt
+
+            # Only require a PR branch ref for actions with substantive changes.
+            # If every changed line in action.yml is a 'uses:' line, the modification is
+            # a pure external dependency version bump and there is no new logic to test
+            # via the PR branch.
+            touch substantive-modified-actions.txt
+            while read -r MODIFIED_ACTION; do
+              non_uses_changes=$(gh pr diff $short_ref -- "actions/$MODIFIED_ACTION/action.yml" \
+                | grep '^[+-]' | grep -v '^---\|^+++' | grep -v 'uses:' | wc -l | tr -d ' ')
+              if [[ "$non_uses_changes" -gt 0 ]]; then
+                echo "$MODIFIED_ACTION" >> substantive-modified-actions.txt
+              fi
+            done < modified-actions.txt
+
+            printf "\n* Actions with substantive changes (beyond external version bumps):\n"
+            cat substantive-modified-actions.txt
             
             touch errors.csv
             while read -r MODIFIED_ACTION; do
               grep "^$MODIFIED_ACTION," differing-action-refs.csv >> errors.csv || true
-            done < modified-actions.txt
+            done < substantive-modified-actions.txt
           else
             cp differing-action-refs.csv errors.csv
           fi
