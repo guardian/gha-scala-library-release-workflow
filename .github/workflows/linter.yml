@@ -52,6 +52,14 @@ jobs:
           # If we're PR, refs to altered actions must match the branch.
           
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Dependabot PRs bump external action versions across many action.yml files
+            # mechanically. There is no new logic to exercise via the PR branch, so the
+            # branch-ref check does not apply to them.
+            if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+              echo "Skipping branch-ref check for Dependabot PR."
+              exit 0
+            fi
+
             gh pr diff $short_ref --name-only | grep "^actions/" | cut -d'/' -f2 | sort | uniq > modified-actions.txt
           
             printf "\n* Actions modified by this PR:\n"
