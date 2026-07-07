@@ -18,14 +18,27 @@ branch will _not_ be running the same `action.yml` as contained in that PR.
 We have a linting check, introduced in https://github.com/guardian/gha-scala-library-release-workflow/pull/73,
 that warns if there are mismatched workflow action branch-refs.
 
-If the linting check finds a branch mismatch, you can use your judgement as to whether
-it's worth making the corresponding change to `reusable-release.yml`. Note that the 
-change will need to be reverted before the branch is merged, and unless you're planning
-to _run_ the code on the PR branch (ie make a test release), you won't get any benefit
-from temporarily updating the branch-refs.
+## Can you ignore linting errors?
 
-Low risk dependabot updates probably don't warrant making a manual change to make the
-linter pass.
+If the linting check finds a branch mismatch, you can use your judgement as to whether
+it's worth making the corresponding change to `reusable-release.yml` to satisfy the
+lint check. A key point is whether you're planning to actually do
+[a manual test release run of the PR](https://github.com/guardian/etag-caching/pull/124/changes)
+before merging - if you are, you _do_ want to fix the errors, so that your new code actually
+_is_ executed in your test run. If you don't intend to do a test run, then the
+linter is warning you about something that won't affect you - and you can ignore it.
+
+* If you're working on a PR that substantively changes the implementation of the
+  GitHub Actions under `actions/`, then you probably _do_ want to correct the refs
+  in `reusable-release.yml` to point to your branch, so that your test runs actually
+  _do_ execute your updated code.
+* Low-risk dependabot updates probably won't warrant making a test run, so don't justify 
+  making the manual ref changes to make the linter pass.
+
+## Refs must be set back to `main` before merging
+
+Note that if you _do_ change the refs while trying out your PR, you'll need to revert
+that ref-change (go back to using `@main`) before the branch is merged.
 
 ## Doesn't making a release mean changing the refs too?
 

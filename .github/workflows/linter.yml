@@ -73,6 +73,6 @@ jobs:
           done < errors.csv
 
           if [ -s "errors.csv" ]; then
-            echo "❌ The workflow is referring to internal actions on a different branch." >&2
+            echo "❌ The workflow is referring to internal actions on a different branch. See https://github.com/guardian/gha-scala-library-release-workflow/blob/main/docs/linting-workflow-action-branch-refs.md" >&2
             exit 1
           fi
