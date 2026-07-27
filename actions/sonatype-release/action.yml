@@ -36,7 +36,7 @@ runs:
         distribution: corretto
         java-version: 21
         cache: sbt # the issue described in https://github.com/actions/setup-java/pull/564 doesn't affect this step (no version.sbt)
-    - uses: sbt/setup-sbt@66fb4376e81982c7d92a4074170846fff88e2e30 # v1.5.0
+    - uses: sbt/setup-sbt@6444f4c8111de4b9059c3975def104b03cfaa5f0 # v1.5.2
     - name: Release
       shell: bash
       run: |
