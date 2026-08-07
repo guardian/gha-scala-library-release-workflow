@@ -46,7 +46,7 @@ runs:
     - id: generate-github-app-token
       uses: actions/create-github-app-token@v3
       with:
-        app-id: ${{ inputs.github-app-id }}
+        client-id: ${{ inputs.github-app-id }}
         private-key: ${{ inputs.github-app-private-key }} }
     - uses: actions/checkout@v7
       with:
