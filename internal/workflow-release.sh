@@ -13,5 +13,8 @@ else
 
     git clean -f
     git checkout main
-    git show $VERSION    
+
+    echo ""
+    echo "workflow-release.sh completed successfully. A new commit tagged with $VERSION has been created, ready for release."
+    echo "To view that commit, use \`git show $VERSION\`."
 fi
