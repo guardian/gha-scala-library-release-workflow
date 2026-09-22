@@ -8,12 +8,12 @@ This guide is for releasing a new version of the gha-scala-library-release-workf
 
    - The [releases page for this repository](https://github.com/guardian/gha-scala-library-release-workflow/releases) may be helpful for deciding on your new release version
 
-2. [Draft a new release](https://github.com/guardian/gha-scala-library-release-workflow/releases/new) in the github UI
+2. [Draft a new release](https://github.com/guardian/gha-scala-library-release-workflow/releases/new) in the GitHub UI
 
-   - select your new tag
-   - manually select the previous tag (because auto will fail)
-   - click Generate Release Notes
-   - click Publish Release
+   - Under `Select tag`, type in the new version number (`vX.Y.Z`) and click `Create new tag`
+   - Manually select the previous tag (because auto will fail)
+   - Click `Generate release notes`
+   - Click `Publish Release`
 
 3. Pull the latest tags
 
@@ -28,3 +28,7 @@ This guide is for releasing a new version of the gha-scala-library-release-workf
    ```
 
 5. Confirm the major version tag points to the same commit as the new minor version tag
+
+This video gives a detailed walkthrough of the release process:
+
+https://github.com/user-attachments/assets/b503d13e-7318-4a58-a641-a0697fda4c87
