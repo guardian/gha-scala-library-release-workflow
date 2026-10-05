@@ -35,7 +35,7 @@ runs:
       with:
         distribution: corretto
         java-version: ${{ steps.establish_java_for_library_build.outputs.library-build-major-java-version }}
-    - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1.5.9
+    - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1.5.11
     - name: Use sbt-release to construct version.sbt updates
       shell: bash
       run: |
