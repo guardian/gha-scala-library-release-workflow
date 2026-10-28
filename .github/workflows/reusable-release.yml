@@ -3,6 +3,11 @@ name: Scala Library Release Workflow
 on:
   workflow_call:
     inputs:
+      runs-on:
+        description: Runner which should run this build
+        type: string
+        default: ubuntu-latest
+        required: false
       GITHUB_APP_ID:
         description:
           "App ID for a GitHub App that is allowed to push directly to the default branch. Eg, App ID on:
@@ -36,7 +41,7 @@ on:
 jobs:
   init:
     name: 🔒 Init
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     outputs:
       pgp-key-fingerprint: ${{ steps.act.outputs.pgp-key-fingerprint }}
       pgp-key-email: ${{ steps.act.outputs.pgp-key-email }}
@@ -51,7 +56,7 @@ jobs:
   versioning:
     name: 🎊 Versioning
     needs: init
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     outputs:
       library-build-major-java-version: ${{ steps.act.outputs.library-build-major-java-version }}
     steps:
@@ -71,7 +76,7 @@ jobs:
     needs: [versioning, init]
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     outputs:
       release-tag: ${{ steps.act.outputs.release-tag }}
       release-notes-url: ${{ steps.act.outputs.release-notes-url }}
@@ -92,7 +97,7 @@ jobs:
   create-artifacts:
     name: 🎊 Create artifacts
     needs: [init, versioning, push-release-commit]
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     outputs:
       artifact-sha256sums: ${{ steps.act.outputs.artifact-sha256sums }}
     steps:
@@ -107,7 +112,7 @@ jobs:
   sign:
     name: 🔒 Sign
     needs: [init, push-release-commit, create-artifacts]
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     steps:
       - uses: $/actions/sign
         with:
@@ -124,7 +129,7 @@ jobs:
   sonatype-release:
     name: 🔒 Sonatype Release
     needs: [push-release-commit, sign]
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     steps:
       - uses: $/actions/sonatype-release
         with:
@@ -134,7 +139,7 @@ jobs:
   update-github:
     name: 🔒 Update GitHub
     needs:  [init, push-release-commit, sign]
-    runs-on: ubuntu-latest
+    runs-on: ${{input.runs-on}}
     permissions:
       contents: write
       pull-requests: write
