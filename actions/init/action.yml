@@ -21,6 +21,42 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check CI status
+      shell: bash
+      run: |
+        gh api graphql -f query='query {
+          repository(owner: "guardian", name: "etag-caching") {
+            object(expression: "1a475029c0e6e44b86be5732b2ef9468fd738cca") {
+               ... on Commit {
+                statusCheckRollup {
+                  contexts(first: 100) {
+                    nodes {
+                      ... on CheckRun {
+                        name
+                        status
+                        conclusion
+                        detailsUrl
+                        checkSuite {
+                          workflowRun {
+                            workflow {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }' | jq '[.data.repository.object.statusCheckRollup.contexts.nodes[] |
+          select(.checkSuite.workflowRun.workflow.name == "CI") |
+        {
+          workflow: .checkSuite.workflowRun.workflow.name,
+          status,
+          conclusion, detailsUrl
+        }]'
     - uses: actions/setup-java@v6
       with:
         distribution: corretto
