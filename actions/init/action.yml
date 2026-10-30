@@ -28,7 +28,7 @@ runs:
       run: |
         gh api graphql -f query='query {
           repository(owner: "guardian", name: "etag-caching") {
-            object(expression: "1a475029c0e6e44b86be5732b2ef9468fd738cca") {
+            object(expression: "${{ github.sha }}" ) {
                ... on Commit {
                 statusCheckRollup {
                   contexts(first: 100) {
