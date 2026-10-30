@@ -27,7 +27,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
       run: |
         gh api graphql -f query='query {
-          repository(owner: "guardian", name: "etag-caching") {
+          repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
             object(expression: "${{ github.sha }}" ) {
                ... on Commit {
                 statusCheckRollup {
