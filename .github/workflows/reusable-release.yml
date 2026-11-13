@@ -10,6 +10,11 @@ on:
         default: '807361' # Only for use by the Guardian!
         required: false # ...but if you're not the Guardian, you'll want to set this explicitly
         type: string
+      CI_WORKFLOW_NAME:
+        description:
+          "Name of CI Workflow that must pass successfully before release can complete - at the Guardian, 'CI'"
+        required: false
+        type: string
     secrets:
       SONATYPE_TOKEN:
         description: 'Sonatype authentication token, colon-separated (username:password) - https://central.sonatype.org/publish/generate-token/'
@@ -46,6 +51,7 @@ jobs:
       - id: act
         uses: $/actions/init
         with:
+          ci-workflow-name: ${{ inputs.CI_WORKFLOW_NAME }}
           pgp-private-key: ${{ secrets.PGP_PRIVATE_KEY }}
 
   versioning:
