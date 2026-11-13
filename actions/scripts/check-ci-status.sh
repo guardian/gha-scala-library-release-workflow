@@ -2,7 +2,8 @@
 
 REPO_OWNER=$1
 REPO_NAME=$2
-COMMIT_ID=$3
+CI_WORKFLOW_NAME=$3
+COMMIT_ID=$4
 
 gh api graphql -f query="query {
   repository(owner: \"$REPO_OWNER\", name: \"$REPO_NAME\") {
@@ -30,10 +31,10 @@ gh api graphql -f query="query {
       }
     }
   }
-}" | jq '[.data.repository.object.statusCheckRollup.contexts.nodes[] |
-  select(.checkSuite.workflowRun.workflow.name == "CI") |
+}" | jq "[.data.repository.object.statusCheckRollup.contexts.nodes[] |
+  select(.checkSuite.workflowRun.workflow.name == \"$CI_WORKFLOW_NAME\") |
 {
   workflow: .checkSuite.workflowRun.workflow.name,
   status,
   conclusion, detailsUrl
-}]'
+}]"
