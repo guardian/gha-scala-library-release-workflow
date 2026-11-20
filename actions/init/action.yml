@@ -1,6 +1,9 @@
 name: 🔒 Init
 description: Establish initial values for this release - eg, is this a Preview release?
 inputs:
+  ci-workflow-name:
+    description: 'Name of CI workflow that ultimately must pass to allow release'
+    required: false
   pgp-private-key:
     description: 'A passwordless PGP key'
     required: true
@@ -21,6 +24,12 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Check CI status
+      if: inputs.ci-workflow-name != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ${{ github.action_path }}/../scripts/check-ci-status.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ inputs.ci-workflow-name }} ${{ github.sha }}
     - uses: actions/setup-java@v6
       with:
         distribution: corretto
