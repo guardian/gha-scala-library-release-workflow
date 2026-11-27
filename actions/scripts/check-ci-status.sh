@@ -54,13 +54,14 @@ fetch_ci_status() {
     return 1
   else
     echo "CI workflow status concluded with $conclusion, not Success"
-    exit 2
+    exit 2 # Immediately exit with failure - there is no recovery from this
   fi
 }
 
 if [ "$WAITING_BEHAVIOUR" == "NO_WAIT" ]; then
-  echo "Check of CI status (will not wait for Success, but will exit if CI failed)"
+  echo "Check of CI status (will not wait for Success, but will exit with error if CI failed)"
   fetch_ci_status
+  exit 0
 else
   echo "Waiting for CI success"
   until fetch_ci_status; do
