@@ -45,7 +45,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-      run: ${{ github.action_path }}/../scripts/check-ci-status.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ inputs.ci-workflow-name }} ${{ github.sha }}
+      run: ${{ github.action_path }}/../scripts/check-ci-status.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ inputs.ci-workflow-name }} ${{ github.sha }} WAIT
     - id: generate-github-app-token
       uses: actions/create-github-app-token@v3
       with:
