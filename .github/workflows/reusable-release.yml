@@ -117,6 +117,7 @@ jobs:
     steps:
       - uses: $/actions/sign
         with:
+          ci-workflow-name: ${{ inputs.CI_WORKFLOW_NAME }}
           github-app-id: ${{ inputs.GITHUB_APP_ID }}
           github-app-private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }} }
           pgp-key-email: ${{ needs.init.outputs.pgp-key-email }}
